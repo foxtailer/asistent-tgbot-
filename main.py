@@ -13,11 +13,13 @@ from bot_functions import play
 import variables
 from states import UserState
 
-import sys; sys.path.append('/home/zoy/vscode')
-import deps
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
+bot_token = os.getenv('TOKEN')
 
-bot = Bot(deps.T)
+bot = Bot(bot_token)
 dp = Dispatcher()
 
 script_dir = db_functions.find_path()
