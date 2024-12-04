@@ -1,16 +1,16 @@
+from collections import namedtuple
 from aiogram.types import BotCommand
 
+import variables
 
-private = [
-    BotCommand(command='select_day', description='Select day you want to practice'),
-    BotCommand(command='test', description='Test throw selected day'),
-    BotCommand(command='test10', description='Test with random 10 words'),
-    #BotCommand(command='sentense', description='Guess word in sentense based on your words'),
-    BotCommand(command='shuffle', description='Try to guess shaffled word'),
-    #BotCommand(command='get_example', description='Give 5 sentence with word'),
-    BotCommand(command='show', description='Show dictionary'),
-    BotCommand(command='add', description='Add new words in dict'),
-    BotCommand(command='del', description='Deleate word/words'),
-    BotCommand(command='start', description='Start bot'),
-    BotCommand(command='help', description='Help/Info'),
-]
+def get_command_list(bot_lang):
+    title_lang = 'COMAND_TITLES_' + bot_lang
+    comand_titles = getattr(variables, title_lang)
+
+    comand_list = zip(variables.COMANDS, comand_titles)
+    Comand = namedtuple('Comand', ['name', 'title'])
+    comand_list = [Comand(name, title) for name, title in comand_list]
+
+    bot_cmnds = [BotCommand(command=comand.name, description=comand.title) for comand in comand_list]
+
+    return bot_cmnds

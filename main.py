@@ -1,54 +1,42 @@
 import asyncio
 import random
 import sqlite3
+from dotenv import load_dotenv
+import os
 
 from aiogram import Bot, types, Dispatcher
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup,\
+    ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from aiogram.fsm.context import FSMContext
 
 import db_functions
-from bot_cmds_list import private
+from bot_cmds_list import get_command_list
 from bot_functions import play
 import variables
 from states import UserState
-
-from dotenv import load_dotenv
-import os
+from handlers.start import user_private_router
 
 load_dotenv()
 bot_token = os.getenv('TOKEN')
 
 bot = Bot(bot_token)
 dp = Dispatcher()
+dp.include_router(user_private_router)
 
 script_dir = db_functions.find_path()
 
 
 @dp.message(Command("help"))
 async def help_commmand(msg: types.Message):
-    message = variables.HELP_MESSAGE
+    message = variables.HELP_MESSAGE_ENG
     await bot.send_message(msg.chat.id, message, parse_mode="HTML")
-    await msg.delete()
- 
-
-@dp.message(Command("start"))
-async def start_commmand(msg: types.Message):
-    
-    n = "We hope our bote can help you learn watever you want:)"
-    if await db_functions.check_user(msg.from_user.first_name, script_dir):
-        await bot.send_message(msg.chat.id, 
-                               f"Hello {msg.from_user.first_name}!\n{n}\n<code>/help</code> for more details.", 
-                               parse_mode="HTML")
-    else:
-        await bot.send_message(msg.chat.id, 
-                               f"Welcome {msg.from_user.first_name}!\n{n}\n<code>/help</code> for more details.", 
-                               parse_mode="HTML")
     await msg.delete()
 
 
 @dp.message(Command("show"))
-async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time"):
+async def show_commmand(msg: types.Message, state:FSMContext, command, 
+                        sort="Time"):
     await state.set_state(UserState.show)
 
     list_of_chunks = []
@@ -57,25 +45,30 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
     if isinstance(command, int):
         if command != 0:
-            curent_dict = await db_functions.get_day(script_dir, msg.chat.first_name, command-1)
+            curent_dict = await db_functions.get_day(script_dir, 
+                                                     msg.chat.first_name, 
+                                                     command-1)
             args = command
         else:
             connection = sqlite3.connect(f"{script_dir}/{db_functions.DB_NAME}")
             cursor = connection.cursor()
             cursor.execute(f'SELECT * FROM {msg.chat.first_name}')
-            curent_dict = cursor.fetchall()  # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
+            # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
+            curent_dict = cursor.fetchall()  
             connection.close()
             args = 0
     
     else:
         if command.args:
             args = int(command.args.strip())
-            curent_dict = await db_functions.get_day(script_dir, msg.from_user.first_name, args-1)
+            curent_dict = await db_functions.get_day(script_dir, msg.from_user.first_name, 
+                                                     args-1)
         else:
             connection = sqlite3.connect(f"{script_dir}/{db_functions.DB_NAME}")
             cursor = connection.cursor()
             cursor.execute(f'SELECT * FROM {msg.chat.first_name}')
-            curent_dict = cursor.fetchall()  # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
+            # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
+            curent_dict = cursor.fetchall() 
             connection.close()
             args = 0
     
@@ -433,7 +426,7 @@ async def choice_callback(callback: types.CallbackQuery, state: FSMContext):
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
-    await bot.set_my_commands(commands=private, scope=types.BotCommandScopeAllPrivateChats())
+    await bot.set_my_commands(commands=get_command_list('RU'), scope=types.BotCommandScopeAllPrivateChats())
     await dp.start_polling(bot, 
                            allowed_updates=["message", "edited_message", "callback_query", "inline_query"],
                            polling_timeout=20)
