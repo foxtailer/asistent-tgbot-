@@ -8,30 +8,22 @@ from aiogram import Bot, types, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup,\
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from aiogram.fsm.context import FSMContext
 
-import db_functions
-from bot_cmds_list import get_command_list
-from bot_functions import play
-import variables
-from states import UserState
-from handlers.start import user_private_router
+from src.handlers import routers_list
+from src.misc import db_functions, variables
+from src.misc.bot_cmds_list import get_command_list
+from src.misc.bot_functions import play
+
+
 
 load_dotenv()
 bot_token = os.getenv('TOKEN')
 
 bot = Bot(bot_token)
 dp = Dispatcher()
-dp.include_router(user_private_router)
+dp.include_routers(*routers_list)
 
 script_dir = db_functions.find_path()
-
-
-@dp.message(Command("help"))
-async def help_commmand(msg: types.Message):
-    message = variables.HELP_MESSAGE_ENG
-    await bot.send_message(msg.chat.id, message, parse_mode="HTML")
-    await msg.delete()
 
 
 @dp.message(Command("show"))
@@ -245,24 +237,6 @@ async def test(msg: types.Message, command, state:FSMContext):
 
     await msg.delete()
 
-
-@dp.message(Command("test10"))
-async def test10(msg: types.Message, command, state:FSMContext):
-    await state.set_state(UserState.test)
-
-    if command.args and command.args.strip() in ('e', 'w', 's w', 'w s', 's'):
-        args = command.args.strip().split()
-    else:
-        args = ()
-
-    user_name = msg.from_user.first_name
-    day = await db_functions.get_word(script_dir, user_name, 10)
-    tmp = {'day': day, 'day_size': 10, 'day_answers': 0, 'args': args}
-
-    await state.update_data(test=tmp)
-    await play(msg.chat.id, user_name, state, bot=bot)
-
-    await msg.delete()
 
 
 @dp.message(Command("shuffle"))
