@@ -128,7 +128,7 @@ async def get_word(user_name, n=1, db_path=DB_PATH):
             return rows_as_tuples
 
 
-async def get_day(user_name, day, db_path=DB_PATH):
+async def get_day(user_name: str, day: Tuple[int], db_path: str = DB_PATH):
     async with aiosqlite.connect(db_path) as db:
         async with db.execute(f"""
             SELECT DISTINCT day
@@ -156,7 +156,7 @@ async def get_day(user_name, day, db_path=DB_PATH):
             return rows
         
 
-async def get_all(user_name, db_path=DB_PATH):
+async def get_all(user_name: str, db_path: str = DB_PATH):
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
     cursor.execute(f'SELECT * FROM {user_name}')

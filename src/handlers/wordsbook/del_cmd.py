@@ -18,7 +18,7 @@ async def del_commmand(msg: types.Message, command):
     
     pattern = r"^d?(?:\d+(?:,\d+)*|(?:\d+-\d+))$"
 
-    args = command.args.replace(' ', '').strip()
+    args = command.args.replace(' ', '').strip()  # TODO if command.args = None -> Error
     
     async def parse_days(string: str) -> Tuple[int]:
         if '-' in string:

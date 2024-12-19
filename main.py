@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 
 from aiogram import Bot, types, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 from src.handlers import routers_list
 from src.services.bot_cmds_list import get_command_list
@@ -11,7 +13,9 @@ from src.services.bot_cmds_list import get_command_list
 load_dotenv()
 bot_token = os.getenv('TOKEN')
 
-bot = Bot(bot_token)
+bot = Bot(bot_token,
+          default=DefaultBotProperties(
+              parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 dp.include_routers(*routers_list)
 

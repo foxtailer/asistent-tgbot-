@@ -1,3 +1,6 @@
+import re
+from typing import Tuple
+
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -13,29 +16,37 @@ show_router = Router()
 @show_router.message(Command("show"))
 async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time"):
 
+    error_msg = "Need number argument! Like this:\n/show 5\nor\n/show 5,7,12\n"\
+                "To show sequense of deys use:\n/show 5-12"
+    
+    pattern = r"^(\d+(,\d+)*|\d+-\d+)$"
+
+    
+    async def parse_days(string: str) -> Tuple[int]:
+        if '-' in string:
+            args = tuple(list(range([int(day) for day in string.split('-')])))
+        else:
+            args = tuple([int(day) for day in string.split(',')])
+        return args
+    
     await state.set_state(UserState.show)
 
     list_of_chunks = []
     msg_chunk = ""
     data = {}
 
-    if isinstance(command, int):
-        if command != 0:
-            curent_dict = await db_functions.get_day(msg.chat.first_name, 
-                                                     command-1)
-            args = command
-        else:
-            curent_dict = db_functions.get_all(msg.chat.first_name)
-            args = 0
-    
-    else:
-        if command.args:
-            args = int(command.args.strip())
+    if command.args:
+        args = command.args.replace(' ', '').strip()
+
+        if re.fullmatch(pattern, args):
+            args = parse_days(args)
             curent_dict = await db_functions.get_day(msg.from_user.first_name, 
-                                                     args-1)
+                                                        args)
         else:
-            curent_dict = db_functions.get_all(msg.chat.first_name)
-            args = 0
+            await msg.answer(msg.chat.id, error_msg)
+    else:
+        curent_dict = await db_functions.get_all(msg.chat.first_name)
+        args = 0
     
     longest_word = max(curent_dict, 
                        key=lambda x: len(x[1])
@@ -93,10 +104,7 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
         ibtn3 = InlineKeyboardButton(text="Close", callback_data=f"Close{i}")
         ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1,ibtn2],[ibtn4],[ibtn3]])
 
-        show_msg = await msg.answer(msg.chat.id, 
-                                        list_of_chunks[i], 
-                                        parse_mode="HTML", 
-                                        reply_markup=ikb)
+        show_msg = await msg.answer(list_of_chunks[i], reply_markup=ikb)
         
         temp[f'Close{i}'] = show_msg.message_id 
     
