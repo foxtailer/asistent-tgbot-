@@ -1,11 +1,10 @@
 from aiogram import  types, Router
 from aiogram.filters import Command
 
-from services import db_functions, variables
+from ...services import db_functions, variables
 
 
 start_router = Router()
-script_dir = db_functions.find_path()
 
 
 @start_router.message(Command("start"))
@@ -13,7 +12,7 @@ async def start_commmand(msg: types.Message):
     
     text = "We hope our bot can help you learn any language :)"
 
-    if await db_functions.check_user(msg.from_user.first_name, script_dir):
+    if await db_functions.check_user(msg.from_user.first_name):
         await msg.answer(msg.chat.id, 
                             f'Hello {msg.from_user.first_name}! 👋\n{text}\n'
                                 'You can select bot language.'

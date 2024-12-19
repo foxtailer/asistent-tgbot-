@@ -1,13 +1,12 @@
 from aiogram import  types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from src.states.states import UserState
 
-from services import db_functions, bot_functions
+from ...states.user_states import UserState
+from ...services import bot_functions
 
 
 test_router = Router()
-script_dir = db_functions.find_path()
 
 
 @test_router.message(Command("test"))

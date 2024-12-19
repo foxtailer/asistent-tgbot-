@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, types, Dispatcher
 
 from src.handlers import routers_list
+from src.services.bot_cmds_list import get_command_list
 
 
 load_dotenv()

@@ -1,21 +1,18 @@
-import sqlite3
-
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from src.states.states import UserState
-from services import db_functions
+from ...states.user_states import UserState
+from ...services import db_functions
 
 
 show_router = Router()
-script_dir = db_functions.find_path()
 
 
 @show_router.message(Command("show"))
-async def show_commmand(msg: types.Message, state:FSMContext, command, 
-                        sort="Time"):
+async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time"):
+
     await state.set_state(UserState.show)
 
     list_of_chunks = []
@@ -24,31 +21,20 @@ async def show_commmand(msg: types.Message, state:FSMContext, command,
 
     if isinstance(command, int):
         if command != 0:
-            curent_dict = await db_functions.get_day(script_dir, 
-                                                     msg.chat.first_name, 
+            curent_dict = await db_functions.get_day(msg.chat.first_name, 
                                                      command-1)
             args = command
         else:
-            connection = sqlite3.connect(f"{script_dir}/{db_functions.DB_NAME}")
-            cursor = connection.cursor()
-            cursor.execute(f'SELECT * FROM {msg.chat.first_name}')
-            # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
-            curent_dict = cursor.fetchall()  
-            connection.close()
+            curent_dict = db_functions.get_all(msg.chat.first_name)
             args = 0
     
     else:
         if command.args:
             args = int(command.args.strip())
-            curent_dict = await db_functions.get_day(script_dir, msg.from_user.first_name, 
+            curent_dict = await db_functions.get_day(msg.from_user.first_name, 
                                                      args-1)
         else:
-            connection = sqlite3.connect(f"{script_dir}/{db_functions.DB_NAME}")
-            cursor = connection.cursor()
-            cursor.execute(f'SELECT * FROM {msg.chat.first_name}')
-            # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
-            curent_dict = cursor.fetchall() 
-            connection.close()
+            curent_dict = db_functions.get_all(msg.chat.first_name)
             args = 0
     
     longest_word = max(curent_dict, 

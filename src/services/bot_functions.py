@@ -1,10 +1,10 @@
 import random
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from states import UserState
 
-import db_functions
+from ..states.user_states import UserState
+from . import db_functions
 
-script_dir = db_functions.find_path()
 
 async def play(chat_id, user_name, state, bot):
     data = await state.get_data()
@@ -28,7 +28,7 @@ async def play(chat_id, user_name, state, bot):
             else:
                 flag = True
                 while flag:
-                    fake_words = await db_functions.get_word(script_dir, user_name, 3)
+                    fake_words = await db_functions.get_word(user_name, 3)
                     if word not in fake_words:
                         flag = False
                 

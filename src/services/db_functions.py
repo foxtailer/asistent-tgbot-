@@ -2,27 +2,19 @@ import os
 import random
 import sqlite3
 import aiosqlite
-
 from datetime import datetime
+from typing import List, Tuple
+
+from ..config import DB_PATH
 
 
-DB_NAME = 'bot_db.db'
-
-async def add_to_db(user_name, command_args, script_dir) -> bool:
-    db_path = f"{script_dir}/{DB_NAME}"
-
+async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: str = DB_PATH) -> bool:
     try:    
         async with aiosqlite.connect(db_path) as connection:
             async with connection.cursor() as cursor:
                 today_date = datetime.today().isoformat()[:10]
-                data = [element.lower().strip() for element in command_args.split(',')]
 
-                if (len(data) % 3) != 0:
-                    return False
-
-                data_sets = [tuple(data[i:i + 3]) for i in range(0, len(data), 3)]
-
-                for data_set in data_sets:
+                for data_set in words:
                     insert_data = (*data_set, today_date)
                     await cursor.execute(
                         f'INSERT OR REPLACE INTO {user_name} (eng, rus, example, day) VALUES (?, ?, ?, ?)',
@@ -36,23 +28,23 @@ async def add_to_db(user_name, command_args, script_dir) -> bool:
         return False
 
 
-async def del_from_db(user_name, command_args: tuple, script_dir):
+async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path=DB_PATH) -> bool:
     try:
         if not command_args[0]:
-            id_list = tuple(map(int, command_args[1].strip().split(",")))
 
-            async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as connection:
+            async with aiosqlite.connect(db_path) as connection:
                 cursor = await connection.cursor()
 
-                placeholders = ','.join('?' for _ in id_list)
+                placeholders = ','.join('?' for _ in command_args[1])
                 query = f'DELETE FROM {user_name} WHERE id IN ({placeholders})'
-                await cursor.execute(query, id_list)
+                await cursor.execute(query, command_args[1])
 
                 await connection.commit()
         else:
-            day_numbers = tuple(map(int, command_args[1].strip().split(",")))
 
-            async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as connection:
+            day_numbers = command_args[1]
+
+            async with aiosqlite.connect(db_path) as connection:
                 cursor = await connection.cursor()
 
                 query = f"SELECT DISTINCT day FROM {user_name}"
@@ -75,9 +67,9 @@ async def del_from_db(user_name, command_args: tuple, script_dir):
         return False
 
 
-async def create_user(user_name: str, script_dir: str) -> None:
+async def create_user(user_name: str, db_path=DB_PATH) -> None:
     
-    async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as conn:
+    async with aiosqlite.connect(db_path) as conn:
         async with conn.cursor() as cursor:
             await cursor.execute(f"""
                 CREATE TABLE IF NOT EXISTS {user_name} (
@@ -92,9 +84,9 @@ async def create_user(user_name: str, script_dir: str) -> None:
             await conn.commit()
 
 
-async def check_user(user_name:str, script_dir)->bool:
+async def check_user(user_name:str, db_path=DB_PATH)->bool:
      
-     async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as conn:
+     async with aiosqlite.connect(db_path) as conn:
         async with conn.cursor() as cursor:
             await cursor.execute("SELECT COUNT(*) FROM users WHERE name = ?", (user_name,))
             user_exists = (await cursor.fetchone())[0] > 0
@@ -102,14 +94,14 @@ async def check_user(user_name:str, script_dir)->bool:
             if not user_exists:
                 await cursor.execute("INSERT INTO users (name) VALUES (?)", (user_name,))
                 await conn.commit()
-                await create_user(user_name, script_dir)
+                await create_user(user_name, DB_PATH)
                 return False
             else:
                 return True
 
 
-async def get_word(script_dir, user_name, n=1):
-    async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as db:
+async def get_word(user_name, n=1, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         async with db.cursor() as cursor:
             await cursor.execute(f"SELECT COUNT(*) FROM {user_name}")
             row_count = (await cursor.fetchone())[0]
@@ -136,8 +128,8 @@ async def get_word(script_dir, user_name, n=1):
             return rows_as_tuples
 
 
-async def get_day(script_dir, user_name, day):
-    async with aiosqlite.connect(f"{script_dir}/{DB_NAME}") as db:
+async def get_day(user_name, day, db_path=DB_PATH):
+    async with aiosqlite.connect(db_path) as db:
         async with db.execute(f"""
             SELECT DISTINCT day
             FROM {user_name}
@@ -164,6 +156,17 @@ async def get_day(script_dir, user_name, day):
             return rows
         
 
+async def get_all(user_name, db_path=DB_PATH):
+    connection = sqlite3.connect(db_path)
+    cursor = connection.cursor()
+    cursor.execute(f'SELECT * FROM {user_name}')
+    # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
+    curent_dict = cursor.fetchall()  
+    connection.close()
+
+    return curent_dict
+
+
 def transfer(a, b, name):
     connection = sqlite3.connect(a)
     cursor = connection.cursor()
@@ -185,37 +188,27 @@ def transfer(a, b, name):
     connection.close()
 
 
-def find_path():
+def find_dir_path():
     script_path = os.path.realpath(__file__)
-    script_dir = os.path.dirname(script_path)
+    dir_path = os.path.dirname(script_path)
+    return dir_path
 
-    return script_dir
 
-
-# from datetime import datetime
-
-# def iso_to_unix(date_str):
-#     dt = datetime.fromisoformat(date_str)
-#     return int(dt.timestamp())
-
-# # Example conversion
-# date_str = '2023-08-12'
-# unix_timestamp = iso_to_unix(date_str)
-
+# Initiate db
 if __name__ == '__main__':
 
-    db_path = f"{find_path()}/{DB_NAME}"
-    print(f"Connecting to database at {db_path}")
+    print(f"Connecting to database at {DB_PATH}")
 
     try:
-        connection = sqlite3.connect(db_path)
+        connection = sqlite3.connect(DB_PATH)
         cursor = connection.cursor()
 
         print("Creating table if not exists...")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL
+                name TEXT NOT NULL,
+                bot TEXT DEFAULT 'ENG' CHECK (LENGTH(bot) = 3) 
             )
         """)
         

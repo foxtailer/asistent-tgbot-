@@ -1,24 +1,32 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 
-from services import db_functions
+from ...services import db_functions
 
 
 add_router = Router()
-script_dir = db_functions.find_path()
 
 
 @add_router.message(Command("add"))
 async def add_commmand(msg: types.Message, command):
-    if command.args:
-        if await db_functions.add_to_db(msg.from_user.first_name, command.args.strip(),
-                                        script_dir):
+
+    error_msg = f"Pls tipe words you want to add after <b>/add</b> command.\n\n"\
+                "<code>/add eng,rus,exsample</code>\n\n"\
+                "Example can be empty but ',' stil nesesary. To add multiple sets of words, just conect them by coma."\
+                "Inside example simbol '<b>,</b>' is forbiden!"
+    
+    if (data := command.args):
+        data = [element.lower().strip() for element in data.split(',')]
+
+        if (len(data) % 3) != 0:
+            await msg.answer(msg.chat.id, error_msg)
+            return
+
+        words = [tuple(data[i:i + 3]) for i in range(0, len(data), 3)]
+
+        if await db_functions.add_to_db(msg.from_user.first_name, words):
             await msg.answer(msg.chat.id, f"Sucsess!",)
         else:
-            await msg.answer(msg.chat.id, f"Wrong sintax!",)
+            await msg.answer(msg.chat.id, f"Wrong sintax!")
     else:
-        await msg.answer(msg.chat.id, 
-                            f"Pls tipe words you want to add after <b>/add</b> command.\n\n"
-                            "<code>/add eng,rus,exsample</code>\n\n"
-                            "Example can be empty but ',' stil nesesary. To add multiple sets of words, just conect them by coma."
-                            "Inside example simbol '<b>,</b>' is forbiden!")
+        await msg.answer(msg.chat.id, error_msg)

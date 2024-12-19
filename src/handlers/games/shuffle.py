@@ -3,16 +3,14 @@ import random
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from src.states.states import UserState
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup,\
 ReplyKeyboardMarkup, KeyboardButton
 
-from services import db_functions
+from ...states.user_states import UserState
+from ...services import db_functions
 
 
 shuffle_router = Router()
-script_dir = db_functions.find_path()
-
 
 @shuffle_router.message(Command("shuffle"))
 async def shuffle_play(msg: types.Message, state: FSMContext):
@@ -20,7 +18,7 @@ async def shuffle_play(msg: types.Message, state: FSMContext):
 
     await state.set_state(UserState.shuffle)
 
-    word = await db_functions.get_word(script_dir, user_name)
+    word = await db_functions.get_word(user_name)
     shuffled_word = list(word[0][1])
     random.shuffle(shuffled_word)
 
