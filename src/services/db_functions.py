@@ -4,8 +4,12 @@ import sqlite3
 import aiosqlite
 from datetime import datetime
 from typing import List, Tuple
+from collections import defaultdict, namedtuple
 
 from ..config import DB_PATH
+
+
+WordRow = namedtuple("WordRow", ["id", "eng", "rus", "example", "day", "lvl"])
 
 
 async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: str = DB_PATH) -> bool:
@@ -128,43 +132,65 @@ async def get_word(user_name, n=1, db_path=DB_PATH):
             return rows_as_tuples
 
 
-async def get_day(user_name: str, day: Tuple[int], db_path: str = DB_PATH):
-    async with aiosqlite.connect(db_path) as db:
-        async with db.execute(f"""
+async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
+
+    result = {}
+
+    async with aiosqlite.connect(db_path) as connection:
+        # Fetch all unique days in the database
+        async with connection.execute(f"""
             SELECT DISTINCT day
             FROM {user_name}
             ORDER BY day
         """) as cursor:
-            days = await cursor.fetchall()
-            
-            if day < 0 or day >= len(days):
-                return
-            
-            # Extract the day value at the specified index
-            target_day = days[day][0]
+            unique_days = await cursor.fetchall()
+            unique_days = [day[0] for day in unique_days]  # Flatten to a list of days
+
+        # Map the specified day indices to actual days
+        day_mapping = {idx + 1: day for idx, day in enumerate(unique_days)}
+
+        for day_index in days:
+            # Skip invalid indices
+            if day_index < 1 or day_index > len(unique_days):
+                continue
+
+            # Get the corresponding day value
+            target_day = day_mapping[day_index]
+
+            # Fetch rows for the specified day
+            async with connection.execute(f"""
+                SELECT id, eng, rus, example, day, lvl
+                FROM {user_name}
+                WHERE day = ?
+                ORDER BY id
+            """, (target_day,)) as cursor:
+                rows = await cursor.fetchall()
+
+            # Convert rows to named tuples and store in the result dictionary
+            result[day_index] = [WordRow(*row) for row in rows]
+
+    return result
         
-        # Fetch rows with the selected day
-        async with db.execute(f"""
-            SELECT id, eng, rus, example, day, lvl
-            FROM {user_name}
-            WHERE day = ?
-            ORDER BY id
-        """, (target_day,)) as cursor:
+
+async def get_all(user_name: str, db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
+
+    result = defaultdict(list)
+
+    async with aiosqlite.connect(db_path) as connection:
+        async with connection.execute(f'SELECT * FROM {user_name}') as cursor:
             rows = await cursor.fetchall()
-            random.shuffle(rows)
 
-            return rows
-        
+        # Extract unique day numbers and map them to sequential indices
+        unique_days = sorted(set(row[4] for row in rows))  # Assuming day is the 5th column
+        day_to_index = {day: idx + 1 for idx, day in enumerate(unique_days)}
 
-async def get_all(user_name: str, db_path: str = DB_PATH):
-    connection = sqlite3.connect(db_path)
-    cursor = connection.cursor()
-    cursor.execute(f'SELECT * FROM {user_name}')
-    # [(371, ' Stain', ' пятно', ' The red wine left a stain on the carpet.', '2024-08-26', 0),]
-    curent_dict = cursor.fetchall()  
-    connection.close()
+        # Group rows by sequential day indices using the named tuple
+        for row in rows:
+            day_number = row[4]  # Assuming day is the 5th column
+            day_index = day_to_index[day_number]
+            result[day_index].append(WordRow(*row))  # Convert the tuple to a named tuple
 
-    return curent_dict
+    return dict(result)
 
 
 def transfer(a, b, name):

@@ -24,92 +24,113 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
     
     async def parse_days(string: str) -> Tuple[int]:
         if '-' in string:
-            args = tuple(list(range([int(day) for day in string.split('-')])))
+            days = [int(day) for day in string.split('-')]
+            days[-1] += 1
+            args = tuple(list(range(*days)))
         else:
             args = tuple([int(day) for day in string.split(',')])
         return args
     
     await state.set_state(UserState.show)
 
-    list_of_chunks = []
-    msg_chunk = ""
+    list_of_days = []
+    day_msg = ""
     data = {}
 
     if command.args:
         args = command.args.replace(' ', '').strip()
 
         if re.fullmatch(pattern, args):
-            args = parse_days(args)
-            curent_dict = await db_functions.get_day(msg.from_user.first_name, 
+            args = await parse_days(args)
+            current_dict = await db_functions.get_day(msg.from_user.first_name, 
                                                         args)
         else:
-            await msg.answer(msg.chat.id, error_msg)
+            await msg.answer(error_msg)
     else:
-        curent_dict = await db_functions.get_all(msg.chat.first_name)
+        current_dict = await db_functions.get_all(msg.chat.first_name)
         args = 0
     
-    longest_word = max(curent_dict, 
-                       key=lambda x: len(x[1])
-                       )[1]
+    longest_word = max(list(current_dict.values())[0], key=lambda x: len(x.eng)).eng
     len_of_longest_word = len(longest_word)
     
     if sort == "Alphabet":
-        curent_dict.sort(key=lambda x: x[1])
+        for day in current_dict:
+            current_dict[day].sort(key=lambda x: x.eng)
 
-        for row in curent_dict:
-            if len(msg_chunk) < 2500:
-                msg_chunk += f"<code>{row[1].capitalize()}</code>: <pre>{' '*len_of_longest_word + row[2]}</pre>\n"
-            else:
-                list_of_chunks.append(msg_chunk)
-                msg_chunk = ""
-                msg_chunk += f"<code>{row[1].capitalize()}</code>: <pre>{' '*len_of_longest_word + row[2]}</pre>\n"
+        for day, word_rows in current_dict.items():
+            day_msg += ". "*10 + word_rows[0].day + f" ({day})" + "\n\n"
+            
+            tmp = [day]
 
-        list_of_chunks.append(msg_chunk)
+            for word_row in word_rows:
+                if len(day_msg) < 2500:
+                    day_msg += f"<code>{word_row.eng.capitalize()}</code>: <pre>{' '*len_of_longest_word + word_row.rus}</pre>\n"
+                else:
+                    tmp.append(day_msg)
+                    day_msg = ""
+                    day_msg += f"<code>{word_row.eng.capitalize()}</code>: <pre>{' '*len_of_longest_word + word_row.rus}</pre>\n"
+
+            tmp.append(day_msg)
+            day_msg = ""
+
+            list_of_days.append(tuple(tmp))
 
     elif sort == "Examples":
-        for i in curent_dict:
-            if len(msg_chunk) < 2500:
-                msg_chunk += f"<code>{i[1].capitalize()}</code>: {i[2]} <pre>{i[3].capitalize()}</pre>\n"
-            else:
-                list_of_chunks.append(msg_chunk)
-                msg_chunk = ""
-                msg_chunk += f"<code>{i[1].capitalize()}</code>: {i[2]} <pre>{i[3].capitalize()}</pre>\n"
+        for day, word_rows in current_dict.items():
+            day_msg += ". "*10 + word_rows[0].day + f" ({day})" + "\n\n"
+            
+            tmp = [day]
 
-        list_of_chunks.append(msg_chunk)
+            for word_row in word_rows:
+                if len(day_msg) < 2500:
+                    day_msg += f"<code>{word_row.eng.capitalize()}</code>: {word_row.rus} <pre>{word_row.example.capitalize()}</pre>\n"
+                else:
+                    tmp.append(day_msg)
+                    day_msg = ""
+                    day_msg += f"<code>{word_row.eng.capitalize()}</code>: {word_row.rus} <pre>{word_row.example.capitalize()}</pre>\n"
+
+            tmp.append(day_msg)
+            day_msg = ""
+
+            list_of_days.append(tuple(tmp))
 
     else:
-        temp_date = ""
-        day_count = 1
+        for day, word_rows in current_dict.items():
+            day_msg += ". "*10 + word_rows[0].day + f" ({day})" + "\n\n"
+            
+            tmp = [day]
 
-        for i in curent_dict:
-            if i[4] != temp_date:
-                msg_chunk += ". "*10 + i[4] + f" ({day_count})" + "\n"
-                temp_date = i[4]
-                day_count += 1
-            if len(msg_chunk) < 2500:
-                msg_chunk += f"{i[0]}. <code>{i[1].capitalize()}</code>:  {'  '*(len_of_longest_word-len(i[1]))}{i[2]}\n"
-            else:
-                list_of_chunks.append(msg_chunk)
-                msg_chunk = ""
-                msg_chunk += f"{i[0]}. <code>{i[1].capitalize()}</code>:  {'  '*(len_of_longest_word-len(i[1]))}{i[2]}\n"
+            for word_row in word_rows:
+                if len(day_msg) < 2500:
+                    day_msg += f"{word_row.id}. <code>{word_row.eng.capitalize()}: {' '*(len_of_longest_word - len(word_row.eng))} {word_row.rus}</code>\n"
+                else:
+                    tmp.append(day_msg)
+                    day_msg = ""
+                    day_msg += f"{word_row.id}. <code>{word_row.eng.capitalize()}: {' '*(len_of_longest_word - len(word_row.eng))} {word_row.rus}</code>\n"
 
-        list_of_chunks.append(msg_chunk)
+            tmp.append(day_msg)
+            day_msg = ""
+
+            list_of_days.append(tuple(tmp))
 
     ibtn1 = InlineKeyboardButton(text="Alphabet",callback_data="Alphabet")
     ibtn2 = InlineKeyboardButton(text="Time", callback_data="Time")
-    ibtn4 = InlineKeyboardButton(text="Examples", callback_data="Examples")
-    
-    temp = {}
-    for i in range(len(list_of_chunks)):
-        ibtn3 = InlineKeyboardButton(text="Close", callback_data=f"Close{i}")
-        ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1,ibtn2],[ibtn4],[ibtn3]])
+    ibtn3 = InlineKeyboardButton(text="Examples", callback_data="Examples")
+    ibtn4 = InlineKeyboardButton(text="Close", callback_data="Close")
 
-        show_msg = await msg.answer(list_of_chunks[i], reply_markup=ikb)
-        
-        temp[f'Close{i}'] = show_msg.message_id 
+    ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1, ibtn2, ibtn3],[ibtn4]])
     
-    data['to_deleate'] = temp
-    data['day'] = args
+    for day in list_of_days:
+        day = day[0]
+        day_messages = day[1:]
+
+        for i in range(len(day_messages)):
+            if i == len(day_messages) - 1:
+                show_msg = await msg.answer(day_messages[i], reply_markup=ikb)
+            else:
+                show_msg = await msg.answer(day_messages[i])
+
+        #temp[f'Close{i}'] = show_msg.message_id 
     
     await state.update_data(show=data)
 
