@@ -20,7 +20,6 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
                 "To show sequense of deys use:\n/show 5-12"
     
     pattern = r"^(\d+(,\d+)*|\d+-\d+)$"
-
     
     async def parse_days(string: str) -> Tuple[int]:
         if '-' in string:
@@ -42,14 +41,15 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
         if re.fullmatch(pattern, args):
             args = await parse_days(args)
-            current_dict = await db_functions.get_day(msg.from_user.first_name, 
-                                                        args)
+            current_dict = await db_functions.get_day(msg.from_user.first_name, args)
         else:
             await msg.answer(error_msg)
     else:
         current_dict = await db_functions.get_all(msg.chat.first_name)
-        args = 0
-    
+
+    # current_dict
+    # {1: [WordRow(id=28, eng='vargant', rus='бродяга', example='and vargant ronin Jin', day='2024-08-13', lvl=0),]}
+
     longest_word = max(list(current_dict.values())[0], key=lambda x: len(x.eng)).eng
     len_of_longest_word = len(longest_word)
     
@@ -112,25 +112,26 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
             day_msg = ""
 
             list_of_days.append(tuple(tmp))
-
-    ibtn1 = InlineKeyboardButton(text="Alphabet",callback_data="Alphabet")
-    ibtn2 = InlineKeyboardButton(text="Time", callback_data="Time")
-    ibtn3 = InlineKeyboardButton(text="Examples", callback_data="Examples")
-    ibtn4 = InlineKeyboardButton(text="Close", callback_data="Close")
-
-    ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1, ibtn2, ibtn3],[ibtn4]])
     
     for day in list_of_days:
-        day = day[0]
         day_messages = day[1:]
+        day = day[0]
+        data[day] = []
+
+        ibtn1 = InlineKeyboardButton(text="Alphabet",callback_data=f"Alphabet_{day}")
+        ibtn2 = InlineKeyboardButton(text="Time", callback_data=f"Time_{day}")
+        ibtn3 = InlineKeyboardButton(text="Examples", callback_data=f"Examples_{day}")
+        ibtn4 = InlineKeyboardButton(text="Close", callback_data=f"Close_{day}")
+
+        ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1, ibtn2, ibtn3],[ibtn4]])
 
         for i in range(len(day_messages)):
             if i == len(day_messages) - 1:
                 show_msg = await msg.answer(day_messages[i], reply_markup=ikb)
+                data[day].append(show_msg.message_id)
             else:
                 show_msg = await msg.answer(day_messages[i])
-
-        #temp[f'Close{i}'] = show_msg.message_id 
+                data[day].append(show_msg.message_id)
     
     await state.update_data(show=data)
 
@@ -139,15 +140,24 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
 @show_router.callback_query(UserState.show)
 async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
-    data = await state.get_data()
+    data = await state.get_data()  # {'show': {1: [10749]}}
     data = data['show']
 
-    if callback.data in data['to_deleate']:
-        await bot.delete_message(chat_id=callback.message.chat.id, message_id=data['to_deleate'][callback.data])
+    args = callback.data.split('_')
 
-    elif callback.data == "Alphabet":
-        await show_commmand(callback.message, state, data['day'], sort="Alphabet")
-    elif callback.data == "Examples":
-        await show_commmand(callback.message, state, data['day'], sort="Examples")
-    elif callback.data == "Time":
-        await show_commmand(callback.message, state, data['day'])
+    class Fake():
+        ...
+    fake=Fake()
+    fake.args = args[1]
+    
+    if args[0] == "Alphabet":
+        for msg_id in data[int(args[1])]:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
+        await show_commmand(callback.message, state, fake, sort="Alphabet")
+    elif args[0] == "Examples":
+        await show_commmand(callback.message, state, fake, sort="Examples")
+    elif args[0] == "Time":
+        await show_commmand(callback.message, state, fake)
+    elif args[0] == "Close":
+        ...
+
