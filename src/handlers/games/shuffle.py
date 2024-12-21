@@ -34,7 +34,7 @@ async def shuffle_play(msg: types.Message, state: FSMContext):
     ikb = InlineKeyboardMarkup(inline_keyboard=[[ibtn1]])
 
     #await bot.send_message(msg.chat.id, DiceEmoji.SLOT_MACHINE, reply_markup=None)
-    shuffle_msg = await msg.answer(msg.chat.id, text, reply_markup=ikb)
+    shuffle_msg = await msg.answer(text, reply_markup=ikb)
 
     data['shuffle_msg'] = shuffle_msg.message_id
     await state.update_data(shuffle=data)

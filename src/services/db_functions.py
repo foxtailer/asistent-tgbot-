@@ -34,40 +34,41 @@ async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: 
 
 async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path=DB_PATH) -> bool:
     try:
-        if not command_args[0]:
+        async with aiosqlite.connect(db_path) as connection:
+            cursor = await connection.cursor()
 
-            async with aiosqlite.connect(db_path) as connection:
-                cursor = await connection.cursor()
-
+            if not command_args[0]: 
+                # Delete by IDs
                 placeholders = ','.join('?' for _ in command_args[1])
                 query = f'DELETE FROM {user_name} WHERE id IN ({placeholders})'
                 await cursor.execute(query, command_args[1])
 
-                await connection.commit()
-        else:
-
-            day_numbers = command_args[1]
-
-            async with aiosqlite.connect(db_path) as connection:
-                cursor = await connection.cursor()
+            else:
+                # Delete by day numbers
+                day_numbers = command_args[1]
+                
+                # Validate day_numbers
+                query = f"SELECT COUNT(DISTINCT day) FROM {user_name}"
+                await cursor.execute(query)
+                total_days = (await cursor.fetchone())[0] 
+                
+                valid_day_numbers = [day for day in day_numbers if 1 <= day <= total_days]
 
                 query = f"SELECT DISTINCT day FROM {user_name}"
                 await cursor.execute(query)
-                unique_days = await cursor.fetchall()
-                unique_days = tuple(day[0] for day in unique_days)
-                
-                day_numbers = [day for day in day_numbers if day > 1 and day <= len(unique_days)]
+                unique_days = tuple(day[0] for day in await cursor.fetchall())
 
-                days_for_del = [unique_days[day-1] for day in day_numbers]
+                days_for_del = [unique_days[day-1] for day in valid_day_numbers] 
                 
                 placeholders = ','.join('?' for _ in days_for_del)
                 query = f'DELETE FROM {user_name} WHERE day IN ({placeholders})'
                 await cursor.execute(query, days_for_del)
 
-                await connection.commit()
+            await connection.commit()
+            return True
 
-        return True
     except Exception as e:
+        print(f"Error during database deletion: {e}") 
         return False
 
 

@@ -9,12 +9,13 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from ...states.user_states import UserState
 from ...services import db_functions
 
+#TODO print errors iw user ask for day that dont exist.
 
 show_router = Router()
 
 
 @show_router.message(Command("show"))
-async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time"):
+async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time", data=None):
 
     error_msg = "Need number argument! Like this:\n/show 5\nor\n/show 5,7,12\n"\
                 "To show sequense of deys use:\n/show 5-12"
@@ -34,7 +35,9 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
     list_of_days = []
     day_msg = ""
-    data = {}
+    
+    if not data:
+        data = {}
 
     if command.args:
         args = command.args.replace(' ', '').strip()
@@ -133,6 +136,7 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
                 show_msg = await msg.answer(day_messages[i])
                 data[day].append(show_msg.message_id)
     
+    data['msg'] = msg
     await state.update_data(show=data)
 
     await msg.delete()
@@ -140,7 +144,7 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
 @show_router.callback_query(UserState.show)
 async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
-    data = await state.get_data()  # {'show': {1: [10749]}}
+    data = await state.get_data()  # {'show': {1: [10749], msg:...}}
     data = data['show']
 
     args = callback.data.split('_')
@@ -153,11 +157,19 @@ async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
     if args[0] == "Alphabet":
         for msg_id in data[int(args[1])]:
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-        await show_commmand(callback.message, state, fake, sort="Alphabet")
+
+        await show_commmand(data['msg'], state, fake, sort="Alphabet", data=data)
     elif args[0] == "Examples":
-        await show_commmand(callback.message, state, fake, sort="Examples")
+        for msg_id in data[int(args[1])]:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
+
+        await show_commmand(data['msg'], state, fake, sort="Examples", data=data)
     elif args[0] == "Time":
-        await show_commmand(callback.message, state, fake)
+        for msg_id in data[int(args[1])]:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
+
+        await show_commmand(data['msg'], state, fake, data=data)
     elif args[0] == "Close":
-        ...
+        for msg_id in data[int(args[1])]:
+            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
 

@@ -1,8 +1,8 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
-from src.states.states import UserState
 
-from services import db_functions, bot_functions
+from ..states.user_states import UserState
+from ..services import db_functions, bot_functions
 
 
 hz_router = Router()
