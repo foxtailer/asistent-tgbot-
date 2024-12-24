@@ -16,19 +16,28 @@ async def test(msg: types.Message, command, state:FSMContext, bot):
 
     await state.set_state(UserState.test)
 
-    if command.args and command.args.strip() in ('e', 'w', 's w', 'w s', 's'):
-        args = command.args.strip().split()
-    else:
+    if not (command.args and (args := command.args.strip().replace(' ', '')) in ('e', 'w', 'sw', 'ws', 's')):
         args = ()
 
-    if current_state is None:
-        await bot.send_message(msg.chat.id, 'Pls select day.')
-    elif current_state == UserState.test:
+    if current_state == UserState.day:
         data = await state.get_data()
-        data = data['test']
+        data = data['day']
+        # {'days': {
+        #     1: [WordRow(),...],
+        #     ....
+        #   },
+        # 'day_size': 1,
+        # 'day_answers': 0,
+        # 'args': ()}
+        words = [word for day in data['days'].values() for word in day]
+        data['words'] = words
+        data.update({'day_size': len(words)})
+        data.update({'day_answers': 0})
         data.update({'args': args})
-        
+
         await state.update_data(test=data)
         await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
+    else:
+        await bot.send_message(msg.chat.id, 'Pls select day.')
 
     await msg.delete()

@@ -10,7 +10,7 @@ async def play(chat_id, user_name, state, bot):
     data = await state.get_data()
     data = data['test']
 
-    words = data['day']
+    words = data['words']
     args = data['args']
    
     if words:
@@ -50,15 +50,15 @@ async def play(chat_id, user_name, state, bot):
 
             if 's' in args:
                 text = word[3].replace(word[1], '****').capitalize()
-                test_msg = await bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=ikb)
+                test_msg = await bot.send_message(chat_id, text, reply_markup=ikb)
             else:
-                test_msg = await bot.send_message(chat_id, f'{word[2 if mod == 1 else 1].capitalize()}:', parse_mode="HTML", reply_markup=ikb)
+                test_msg = await bot.send_message(chat_id, f'{word[2 if mod == 1 else 1].capitalize()}:', reply_markup=ikb)
         else:
             if len(args) > 1:
                 text = word[3].replace(word[1], '****').capitalize()
-                test_msg = await bot.send_message(chat_id, text, parse_mode="HTML")
+                test_msg = await bot.send_message(chat_id, text)
             else:
-                test_msg = await bot.send_message(chat_id, word[2], parse_mode="HTML")
+                test_msg = await bot.send_message(chat_id, word[2])
 
             data.update({'write_answer': word[1]})
             await state.set_state(UserState.write)

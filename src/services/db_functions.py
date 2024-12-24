@@ -134,7 +134,9 @@ async def get_word(user_name, n=1, db_path=DB_PATH):
 
 
 async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
-
+    """
+    Return day or days {day_number: [WordRow,...]}
+    """
     result = {}
 
     async with aiosqlite.connect(db_path) as connection:
@@ -147,11 +149,11 @@ async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> d
             unique_days = await cursor.fetchall()
             unique_days = [day[0] for day in unique_days]  # Flatten to a list of days
 
-        # Map the specified day indices to actual days
+        # Map the specified day index to actual days
         day_mapping = {idx + 1: day for idx, day in enumerate(unique_days)}
 
         for day_index in days:
-            # Skip invalid indices
+            # Skip invalid index
             if day_index < 1 or day_index > len(unique_days):
                 continue
 
