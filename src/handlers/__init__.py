@@ -8,9 +8,10 @@ from .wordsbook.show_cmd import show_router
 from .games.shuffle import shuffle_router
 from .games.test import test_router
 from .games.test10 import test10_router
+from .games.play_write import play_write_router
 
 from .callback.shuffle import shuffle_call_router
-from .callback.test import test_call_router
+from .callback.play import play_call_router
 
 
 routers_list = [
@@ -24,9 +25,10 @@ routers_list = [
     shuffle_router,
     test10_router,
     test_router,
+    play_write_router,
 
     shuffle_call_router,
-    test_call_router
+    play_call_router
 ]
 
 

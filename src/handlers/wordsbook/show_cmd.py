@@ -8,6 +8,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ...states.user_states import UserState
 from ...services import db_functions
+from ...services.parse_days import parse_days
 
 #TODO print errors iw user ask for day that dont exist.
 
@@ -22,15 +23,6 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
     
     pattern = r"^(\d+(,\d+)*|\d+-\d+)$"
     
-    async def parse_days(string: str) -> Tuple[int]:
-        if '-' in string:
-            days = [int(day) for day in string.split('-')]
-            days[-1] += 1
-            args = tuple(list(range(*days)))
-        else:
-            args = tuple([int(day) for day in string.split(',')])
-        return args
-    
     await state.set_state(UserState.show)
 
     list_of_days = []
@@ -43,8 +35,8 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
         args = command.args.replace(' ', '').strip()
 
         if re.fullmatch(pattern, args):
-            args = await parse_days(args)
-            current_dict = await db_functions.get_day(msg.from_user.first_name, args)
+            args = await parse_days(args)  # Magic)
+            current_dict = await db_functions.get_day(msg.from_user.first_name, args[1])
         else:
             await msg.answer(error_msg)
     else:
@@ -172,4 +164,3 @@ async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
     elif args[0] == "Close":
         for msg_id in data[int(args[1])]:
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-

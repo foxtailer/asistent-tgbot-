@@ -1,14 +1,14 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 
-from ..states.user_states import UserState
-from ..services import db_functions, bot_functions
+from ...states.user_states import UserState
+from ...services import bot_functions
 
 
-hz_router = Router()
+play_write_router = Router()
 
 
-@hz_router.message(UserState.write)
+@play_write_router.message(UserState.play)
 async def write(msg: types.Message, state: FSMContext, bot):
     data = await state.get_data()
     data = data['test']
