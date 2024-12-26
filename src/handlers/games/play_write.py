@@ -9,30 +9,27 @@ play_write_router = Router()
 
 
 @play_write_router.message(UserState.play)
-async def write(msg: types.Message, state: FSMContext, bot):
+async def play_write(msg: types.Message, state: FSMContext, bot):
     data = await state.get_data()
-    data = data['test']
-    right_answer = data['write_answer']
+    data = data['play']
+    user_id = msg.from_user.id
+    amount = data['size']
 
-    if data.get('score') and data['flag']:
-        await bot.delete_message(msg.chat.id, message_id=data['score'])
+    if data.get('right_answers') == None:
+        data['right_answers'] = 0
 
-    if right_answer.lower().strip() == msg.text.lower().strip():
-        if data['flag']:
-            data['day_answers'] += 1
-            score = await msg.answer(text=f"✅ {data['day_answers']}/{data['day_size']}")
-            data['score'] = score.message_id
+    if data.get('score_msg'):
+        await bot.delete_message(msg.chat.id, message_id=data['score_msg'])
 
-        await state.set_state(UserState.test)
-        await state.update_data(data)
-        await bot_functions.play(msg.from_user.id, msg.from_user.first_name, state, bot=bot)
-    else:
-        await msg.deleate()
-        if data['flag']:
-            score = await bot.send_message(msg.chat.id, 
-                                            f"❌ {data['day_answers']}/{data['day_size']}", 
-                                            parse_mode="HTML")
-            data['score'] = score.message_id
-            data['flag'] = False
-            await state.update_data(data)
-        await bot.send_message(msg.chat.id, f"{right_answer}", parse_mode="HTML")
+    if msg.text.lower() == data['answer']:
+        data['right_answers'] += 1
+
+        answer = await msg.answer(text=f"✅ {data['right_answers']}/{amount}")
+
+    else: 
+        answer = await msg.answer(text=f"❌ {data['right_answers']}/{amount}")
+
+    data['score_msg'] = answer.message_id   
+    await state.update_data(play=data)
+    await bot_functions.play(user_id, msg.from_user.first_name, state, bot=bot)
+    await msg.delete()

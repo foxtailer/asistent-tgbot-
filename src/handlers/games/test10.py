@@ -9,20 +9,21 @@ from ...services import db_functions, bot_functions
 test10_router = Router()
 
 
-@test10_router.message(Command("start"))
+@test10_router.message(Command("test10"))
 async def test10(msg: types.Message, command, state:FSMContext, bot):
-    await state.set_state(UserState.test)
+    await state.set_state(UserState.play)
 
-    if command.args and command.args.strip() in ('e', 'w', 's w', 'w s', 's'):
-        args = command.args.strip().split()
-    else:
-        args = ()
+    if not (command.args and (args := command.args.strip().replace(' ', '')) 
+            in ('e', 's', 'n', 'en', 'sn')):
+        args = ''
 
     user_name = msg.from_user.first_name
-    day = await db_functions.get_word(user_name, 10)
-    tmp = {'day': day, 'day_size': 10, 'day_answers': 0, 'args': args}
+    words = await db_functions.get_word(user_name, 10)
+    
+    new_data = {}
+    new_data['words'] = words  # list[WordRow,]
+    new_data['args'] = args
 
-    await state.update_data(test=tmp)
+    await state.update_data(play=new_data)
     await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
-
     await msg.delete()

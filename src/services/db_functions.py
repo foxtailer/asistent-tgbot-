@@ -105,7 +105,7 @@ async def check_user(user_name:str, db_path=DB_PATH)->bool:
                 return True
 
 
-async def get_word(user_name, n=1, db_path=DB_PATH):
+async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[set,]:
     async with aiosqlite.connect(db_path) as db:
         async with db.cursor() as cursor:
             await cursor.execute(f"SELECT COUNT(*) FROM {user_name}")
