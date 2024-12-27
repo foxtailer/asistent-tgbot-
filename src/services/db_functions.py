@@ -135,7 +135,7 @@ async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[set,]:
 
 async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
     """
-    Return day or days {day_number: [WordRow,...]}
+    Return day or days {day_number: [WordRow,...],}
     """
     result = {}
 
@@ -176,7 +176,10 @@ async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> d
         
 
 async def get_all(user_name: str, db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
-
+    """
+    Return all user days {day_number: [WordRow,...],}
+    """
+    
     result = defaultdict(list)
 
     async with aiosqlite.connect(db_path) as connection:
