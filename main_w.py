@@ -14,7 +14,7 @@ from src.services.bot_cmds_list import get_command_list
 load_dotenv()
 
 API_TOKEN = os.getenv('TOKEN')
-WEBHOOK_HOST = "https://0ce3-213-231-50-200.ngrok-free.app"  # Your ngrok public URL
+WEBHOOK_HOST = "https://d83e-213-231-50-200.ngrok-free.app"  # Your ngrok public URL
 WEBHOOK_PATH = "/webhook/"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
@@ -39,7 +39,7 @@ app.router.add_post(WEBHOOK_PATH, handle_webhook)
 
 async def on_startup(app):
     # Set the webhook when the aiohttp app starts
-    await bot.set_webhook(WEBHOOK_URL)
+    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
     await bot.set_my_commands(commands=get_command_list('RU'), scope=types.BotCommandScopeAllPrivateChats())
 
 async def on_shutdown(app):

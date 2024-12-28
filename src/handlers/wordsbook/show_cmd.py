@@ -21,14 +21,13 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
                 "To show sequense of deys use:\n/show 5-12"
     
     pattern = r"^(\d+(,\d+)*|\d+-\d+)$"
-    
-    if await state.get_state() != "show":
+
+    if  await state.get_state() != "UserState:show":
         await state.clear()
         await state.set_state(UserState.show)
         data = {}
     else:
-        data = state.get_data()
-        await state.clear()
+        data = await state.get_data()
         data = data['show']
 
     days_msg = {}
@@ -133,9 +132,6 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
     data['msg'] = msg
     await state.update_data(show=data)
-
-    # if first_time_flag:
-    #     await msg.delete()
 
 
 @show_router.callback_query(UserState.show)
