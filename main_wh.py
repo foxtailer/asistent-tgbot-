@@ -14,7 +14,8 @@ from src.services.bot_cmds_list import get_command_list
 load_dotenv()
 
 API_TOKEN = os.getenv('TOKEN')
-WEBHOOK_HOST = "https://bfe4-213-231-21-243.ngrok-free.app"  # Your ngrok public URL
+#WEBHOOK_HOST = "https://0cdc-213-231-38-36.ngrok-free.app"  # Your ngrok public URL
+WEBHOOK_HOST = open('./data/config', 'r').readline()
 WEBHOOK_PATH = "/webhook/"
 WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
 
@@ -52,4 +53,4 @@ app.on_shutdown.append(on_shutdown)
 
 
 if __name__ == '__main__':
-    web.run_app(app, host='0.0.0.0', port=8001)
+    web.run_app(app, host='127.0.0.1', port=88)
