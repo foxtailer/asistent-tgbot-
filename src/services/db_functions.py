@@ -1,6 +1,5 @@
 import os
 import random
-import sqlite3
 import aiosqlite
 from datetime import datetime
 from typing import List, Tuple
@@ -10,6 +9,25 @@ from ..config import DB_PATH
 
 
 WordRow = namedtuple("WordRow", ["id", "eng", "rus", "example", "day", "lvl"])
+
+
+async def init_db():
+    print(f"Connecting to database at {DB_PATH}")
+
+    try:
+        async with aiosqlite.connect(DB_PATH) as connection:
+            print("Creating table if not exists...")
+            await connection.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    bot TEXT DEFAULT 'ENG' CHECK (LENGTH(bot) = 3) 
+                )
+            """)
+            await connection.commit()
+            print("Table created or already exists.")
+    except aiosqlite.Error as e:
+        print(f"SQLite error: {e}")
 
 
 async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: str = DB_PATH) -> bool:
@@ -199,54 +217,7 @@ async def get_all(user_name: str, db_path: str = DB_PATH) -> dict[int:list[WordR
     return dict(result)
 
 
-def transfer(a, b, name):
-    connection = sqlite3.connect(a)
-    cursor = connection.cursor()
-
-    cursor.execute(f'SELECT * FROM {name}')
-    user_dict = cursor.fetchall()
-    user_dict = [tuple(list(x)[1:]) for x in user_dict]
-
-    connection.commit()
-    connection.close()
-
-    connection = sqlite3.connect(b)
-    cursor = connection.cursor()
-
-    for i in user_dict:
-        cursor.execute(f'INSERT INTO {name} (eng, rus, example, day) VALUES (?, ?, ?, ?)', i)
-
-    connection.commit()
-    connection.close()
-
-
 def find_dir_path():
     script_path = os.path.realpath(__file__)
     dir_path = os.path.dirname(script_path)
     return dir_path
-
-
-# Initiate db
-if __name__ == '__main__':
-
-    print(f"Connecting to database at {DB_PATH}")
-
-    try:
-        connection = sqlite3.connect(DB_PATH)
-        cursor = connection.cursor()
-
-        print("Creating table if not exists...")
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY,
-                name TEXT NOT NULL,
-                bot TEXT DEFAULT 'ENG' CHECK (LENGTH(bot) = 3) 
-            )
-        """)
-        
-        connection.commit()
-        print("Table created or already exists.")
-    except sqlite3.Error as e:
-        print(f"SQLite error: {e}")
-    finally:
-        connection.close()

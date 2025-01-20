@@ -9,7 +9,8 @@ start_router = Router()
 
 @start_router.message(Command("start"))
 async def start_commmand(msg: types.Message):
-    
+    await db_functions.init_db()
+
     text = "We hope our bot can help you learn any language :)"
 
     if await db_functions.check_user(msg.from_user.first_name):

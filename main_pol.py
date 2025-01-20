@@ -1,3 +1,4 @@
+import requests
 import asyncio
 import os
 from dotenv import load_dotenv
@@ -18,6 +19,21 @@ bot = Bot(bot_token,
               parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 dp.include_routers(*routers_list)
+
+
+# Delete webhook
+
+# The URL for deleting the webhook
+delete_webhook_url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
+
+# Make the POST request to delete the webhook
+response = requests.post(delete_webhook_url)
+
+# Check the response from Telegram
+if response.status_code == 200:
+    print("Webhook deleted successfully!")
+else:
+    print(f"Failed to delete webhook. Status code: {response.status_code}")
 
 
 async def main():
