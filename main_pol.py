@@ -9,20 +9,21 @@ from aiogram.enums import ParseMode
 
 from src.handlers import routers_list
 from src.services.bot_cmds_list import get_command_list
+# If need proxy on pythneweryvere
+# from aiogram.client.session.aiohttp import AiohttpSession
 
 
 load_dotenv()
 bot_token = os.getenv('TOKEN')
+# session = AiohttpSession(proxy='http://proxy.server:3128')
 
 bot = Bot(bot_token,
-          default=DefaultBotProperties(
-              parse_mode=ParseMode.HTML))
+          default=DefaultBotProperties(parse_mode=ParseMode.HTML)) # session=session # for proxy
 dp = Dispatcher()
 dp.include_routers(*routers_list)
 
 
-# Delete webhook
-
+# Delete webhook -------------------------
 # The URL for deleting the webhook
 delete_webhook_url = f"https://api.telegram.org/bot{bot_token}/deleteWebhook"
 
@@ -35,6 +36,7 @@ if response.status_code == 200:
 else:
     print(f"Failed to delete webhook. Status code: {response.status_code}")
 
+# ---------------------------------------
 
 async def main():
     await bot.delete_webhook(drop_pending_updates=True)
