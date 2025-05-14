@@ -35,7 +35,6 @@ if response.status_code == 200:
     print("Webhook deleted successfully!")
 else:
     print(f"Failed to delete webhook. Status code: {response.status_code}")
-
 # ---------------------------------------
 
 async def main():

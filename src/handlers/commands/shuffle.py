@@ -3,8 +3,7 @@ import random
 from aiogram import types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup,\
-ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ...states.user_states import UserState
 from ...services import db_functions
@@ -41,24 +40,3 @@ async def shuffle_play(msg: types.Message, state: FSMContext):
     await state.update_data(shuffle=data)
 
     await msg.delete()
-
-
-@shuffle_router.message(UserState.shuffle)
-async def listener(msg: types.Message, state: FSMContext, bot):
-    data = await state.get_data()
-    data = data['shuffle']
-
-    shuffle_word = data['shuffle_word']
-
-    if msg.text.lower() == shuffle_word:
-        btn = KeyboardButton(text="/shuffle")
-        rkb = ReplyKeyboardMarkup(keyboard=[[btn]], resize_keyboard=True)
-
-        await msg.answer(text=f"✅\n{data['shuffle_word'].capitalize()}: {data['shuffle_rus']}\n\
-{data['shuffle_ex'].capitalize()}",
-reply_markup=rkb)
-        
-        await bot.delete_message(chat_id=msg.chat.id, message_id=data['shuffle_msg'])
-        await state.clear()
-    else:
-        await msg.delete()

@@ -1,9 +1,9 @@
 import re
 
-from aiogram import Router, types
+from aiogram import Router, types, Bot
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 
 from ...states.user_states import UserState
 from ...services import db_functions
@@ -163,3 +163,11 @@ async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
     elif args[0] == "Close":
         for msg_id in data[int(args[1])]:
             await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
+
+
+@show_router.message(Command("clear"), UserState.show)
+async def slear_show(msg, state: FSMContext, bot: Bot):
+    data = await state.get_data()  # {'show': {1: [10749,], msg:...}}
+    data = data['show']
+    #await bot.edit_message_reply_markup(chat_id=msg.chat.id, message_id=data['msg'].message_id, reply_markup=None)
+    await bot.deleate_message(chat_id=msg.chat.id, message_id=data['msg'].message_id)

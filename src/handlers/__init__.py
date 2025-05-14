@@ -1,14 +1,13 @@
-from .service.start import start_router
-from .service.select_day import select_day_router
+from .commands.start import start_router
+from .commands.select_day import select_day_router
 
-from .wordsbook.add_cmd import add_router
-from .wordsbook.del_cmd import del_router
-from .wordsbook.show_cmd import show_router
+from .commands.add_cmd import add_router
+from .commands.del_cmd import del_router
+from .commands.show_cmd import show_router
 
-from .games.shuffle import shuffle_router
-from .games.test import test_router
-from .games.test10 import test10_router
-from .games.play_write import play_write_router
+from .commands.shuffle import shuffle_router
+from .commands.test import test_router
+from .msg.play_msg import play_msg_router
 
 from .callback.shuffle import shuffle_call_router
 from .callback.play import play_call_router
@@ -23,9 +22,8 @@ routers_list = [
     show_router,
     
     shuffle_router,
-    test10_router,
     test_router,
-    play_write_router,
+    play_msg_router,
 
     shuffle_call_router,
     play_call_router
