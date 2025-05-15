@@ -71,7 +71,6 @@ HELP_MESSAGE_RUS = """
 
 COMANDS = (
     'help',
-    'select_day',
     'test',
     'shuffle',
     'show',
@@ -84,7 +83,6 @@ COMANDS = (
 
 COMAND_TITLES_ENG = (
     'Help/Info',
-    'Select day you want to practice',
     'Test throw selected day',
     'Try to guess shuffled word',
     'Show dictionary',
@@ -95,7 +93,6 @@ COMAND_TITLES_ENG = (
 
 COMAND_TITLES_RU = (
     'Помощь/Информация',
-    'Выберите день, для тренировки',
     'Тест по выбранному дню',
     'Попробуйте угадать перемешанное слово',
     'Показать словарь',

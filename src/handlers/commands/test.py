@@ -1,9 +1,12 @@
+import re
+
 from aiogram import  types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 from ...states.user_states import UserState
 from ...services import bot_functions, db_functions
+from ...services.parse_days import parse_days, parse_test_args
 
 
 test_router = Router()
@@ -27,37 +30,43 @@ async def test(msg: types.Message, command, state:FSMContext, bot):
     <code>/test e n</code>
     """
 
-    current_state = await state.get_state()
-    user_name = msg.from_user.first_name
+    await state.clear()
+    await state.set_state(UserState.play)
+    
+    #pattern = re.compile(r'^([sen]*)(r\d+)?(\d+(?:,\d+)*|\d+-\d+|\d+)?$')
 
-    # if not (command.args and (args := command.args.strip().replace(' ', '')) 
-    #         in ('e', 's', 'n', 'en', 'sn')):
-    #     args = ''
-    args = '' if command.args is None else command.args
+    # 1 are 'default day' TODO store it in cash. it should be last day we use for test
+    args = '1' if command.args is None else command.args.strip().replace(' ', '')
+    #match = pattern.fullmatch(args)
 
-    if 'r' in args:
-        words = await db_functions.get_word(user_name, 10)
-        new_data = {}
-        new_data['words'] = words  # list[WordRow,]
-        new_data['args'] = args
-        await state.update_data(play=new_data)
-        await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
+    # if match:
+    #     play_args, rand_flag, days = match.group(1), match.group(2), match.group(3)
+    # else:
+    #     play_args = ''
+
+    args = await parse_test_args(args)
+    play_args, rand_flag, days = args['flags'], args['r'], args['days']
+
+    if ('es' in play_args) or ('se' in play_args):
+        await bot.send_message(msg.chat.id, 'Unsoported arguments combination.')
+        await state.clear()
     else:
-        if current_state == UserState.day:
-            data = await state.get_data()
-            await state.clear()
-            await state.set_state(UserState.play)
-            data = data['days'] # dict[int:list[WordRow,],]
+        user_name = msg.from_user.first_name
+        new_data = {}
+        new_data['args'] = play_args
 
-            # Preprocess words for play function
-            new_data = {}
-            words = [word for day in data['days'].values() for word in day]
-            new_data['words'] = words  # list[WordRow,]
-            new_data['args'] = args
-
+        if rand_flag:
+            rand_flag = int(rand_flag.replace('r', ''))
+            new_data['words'] = await db_functions.get_word(user_name, rand_flag)  # list[WordRow,]
             await state.update_data(play=new_data)
             await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
         else:
-            await bot.send_message(msg.chat.id, 'Pls select day.')
+            days = await parse_days(days)
+            days = await db_functions.get_day(msg.from_user.first_name,  days[1])  # dict{int:list[WordRow,]}
+            words = [word for day in days.values() for word in day]
+            new_data['words'] = words  # list[WordRow,]
+
+            await state.update_data(play=new_data)
+            await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
 
     await msg.delete()

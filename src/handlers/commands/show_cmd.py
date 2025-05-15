@@ -45,7 +45,7 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
         current_dict = await db_functions.get_all(msg.chat.first_name)
 
     # current_dict
-    # {1: [WordRow(id=28, eng='vargant', rus='бродяга', example='and vargant ronin Jin', day='2024-08-13', lvl=0),],
+    # {1: [WordRow(id=28, eng='vargant', rus='бродяга', example='and vargant ronin Jin', day='2024-08-13', lvl=0),...],
     #  2: [...],...}
 
     longest_word = max(list(current_dict.values())[0], key=lambda x: len(x.eng)).eng
