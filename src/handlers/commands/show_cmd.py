@@ -19,8 +19,6 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
     error_msg = "Need number argument! Like this:\n/show 5\nor\n/show 5,7,12\n"\
                 "To show sequense of deys use:\n/show 5-12"
-    
-    pattern = r"^(\d+(,\d+)*|\d+-\d+)$"
 
     if  await state.get_state() != "UserState:show":
         await state.clear()
@@ -34,11 +32,13 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
     msg_text = ""
 
     if command.args:
-        args = command.args.replace(' ', '').strip()
+        args = await parse_days(command.args.replace(' ', '').strip())
 
-        if re.fullmatch(pattern, args):
-            args = await parse_days(args)
-            current_dict = await db_functions.get_day(msg.from_user.first_name, args[1])
+        if args:
+            if args[0] == 'd':
+                current_dict = await db_functions.get_day(msg.from_user.first_name, args[1])
+            elif args[0] == 'w':
+                pass  #TODO show words
         else:
             await msg.answer(error_msg)
     else:
@@ -132,6 +132,7 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
     data['msg'] = msg
     await state.update_data(show=data)
+    await msg.delete()
 
 
 @show_router.callback_query(UserState.show)

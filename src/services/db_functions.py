@@ -123,7 +123,7 @@ async def check_user(user_name:str, db_path=DB_PATH)->bool:
                 return True
 
 
-async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[set,]:
+async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[WordRow,]:
     async with aiosqlite.connect(db_path) as db:
         async with db.cursor() as cursor:
             await cursor.execute(f"SELECT COUNT(*) FROM {user_name}")
@@ -151,7 +151,7 @@ async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[set,]:
             return rows_as_tuples
 
 
-async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
+async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow,]]:
     """
     Return day or days {day_number: [WordRow,...],}
     """

@@ -7,7 +7,7 @@ from ...services import  bot_functions
 
 play_call_router = Router()
 
-
+#TODO show right answer like with msg
 @play_call_router.callback_query(UserState.play)
 async def choice_callback(callback: types.CallbackQuery, state: FSMContext, bot):
     data = await state.get_data()
