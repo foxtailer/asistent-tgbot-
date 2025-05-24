@@ -1,9 +1,7 @@
-import re
-
-from aiogram import Router, types, Bot
+from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ...states.user_states import UserState
 from ...services import db_functions
@@ -133,42 +131,3 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
     data['msg'] = msg
     await state.update_data(show=data)
     await msg.delete()
-
-
-@show_router.callback_query(UserState.show)
-async def callback_show(callback: types.CallbackQuery, state: FSMContext, bot):
-    data = await state.get_data()  # {'show': {1: [10749,], msg:...}}
-    data = data['show']
-    args = callback.data.split('_')
-
-    class FakeComand():
-        ...
-    fake_comand=FakeComand()
-    fake_comand.args = args[1]
-    
-    if args[0] == "Alphabet":
-        for msg_id in data[int(args[1])]:
-            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-
-        await show_commmand(data['msg'], state, fake_comand, sort="Alphabet")
-    elif args[0] == "Examples":
-        for msg_id in data[int(args[1])]:
-            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-
-        await show_commmand(data['msg'], state, fake_comand, sort="Examples")
-    elif args[0] == "Time":
-        for msg_id in data[int(args[1])]:
-            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-
-        await show_commmand(data['msg'], state, fake_comand)
-    elif args[0] == "Close":
-        for msg_id in data[int(args[1])]:
-            await bot.delete_message(chat_id=callback.message.chat.id, message_id=msg_id)
-
-
-@show_router.message(Command("clear"), UserState.show)
-async def slear_show(msg, state: FSMContext, bot: Bot):
-    data = await state.get_data()  # {'show': {1: [10749,], msg:...}}
-    data = data['show']
-    #await bot.edit_message_reply_markup(chat_id=msg.chat.id, message_id=data['msg'].message_id, reply_markup=None)
-    await bot.deleate_message(chat_id=msg.chat.id, message_id=data['msg'].message_id)

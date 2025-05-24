@@ -7,7 +7,7 @@ from ...services import  bot_functions
 
 play_call_router = Router()
 
-#TODO show right answer like with msg
+
 @play_call_router.callback_query(UserState.play)
 async def choice_callback(callback: types.CallbackQuery, state: FSMContext, bot):
     data = await state.get_data()
@@ -25,10 +25,10 @@ async def choice_callback(callback: types.CallbackQuery, state: FSMContext, bot)
     if callback.data == "True":
         data['right_answers'] += 1
 
-        msg = await callback.message.answer(text=f"✅ {data['right_answers']}/{amount}")
+        msg = await callback.message.answer(text=f"✅ {data['right_answers']}/{amount} [{data['answer']}]")
 
     elif callback.data == "False": 
-        msg = await callback.message.answer(text=f"❌ {data['right_answers']}/{amount}")
+        msg = await callback.message.answer(text=f"❌ {data['right_answers']}/{amount} [{data['answer']}]")
         
     data['score_msg'] = msg.message_id
     #await state.set_state(UserState.play)    

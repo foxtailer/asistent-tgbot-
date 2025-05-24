@@ -10,6 +10,7 @@ from .msg.shuffle import shuffle_msg_router
 
 from .callback.shuffle import shuffle_call_router
 from .callback.play import play_call_router
+from .callback.show import show_call_router
 
 
 routers_list = [
@@ -24,7 +25,8 @@ routers_list = [
     shuffle_msg_router,
 
     shuffle_call_router,
-    play_call_router
+    play_call_router,
+    show_call_router,
 ]
 
 
