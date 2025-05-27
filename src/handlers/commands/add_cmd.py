@@ -1,7 +1,8 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 
-from ...services import db_functions
+from src.services import db_functions
+from src.config import DB_PATH
 
 
 add_router = Router()
@@ -24,7 +25,7 @@ async def add_commmand(msg: types.Message, command):
 
         words = [tuple(data[i:i + 3]) for i in range(0, len(data), 3)]
 
-        if await db_functions.add_to_db(msg.from_user.first_name, words):
+        if await db_functions.add_to_db(msg.from_user.first_name, words, db_path=DB_PATH):
             await msg.answer("Sucsess!")
         else:
             await msg.answer("Error!")

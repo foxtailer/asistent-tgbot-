@@ -1,8 +1,8 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 
-from ...states.user_states import UserState
-from ..commands.show_cmd import show_commmand
+from src.states.user_states import UserState
+from src.handlers.commands.show_cmd import show_commmand
 
 
 show_call_router = Router()

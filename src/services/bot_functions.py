@@ -2,8 +2,9 @@ import random
 
 from aiogram.fsm.context import FSMContext
 
-from . import db_functions
-from .. keyboards import play_ikb
+from src.services import db_functions
+from src.keyboards import play_ikb
+from src.config import DB_PATH
 
 
 async def play(chat_id: int, user_name: str, state: FSMContext, bot):
@@ -37,7 +38,7 @@ async def play(chat_id: int, user_name: str, state: FSMContext, bot):
             else:
                 flag = True
                 while flag:  # Maby better save some reserver words in state instead of buther db
-                    fake_words = await db_functions.get_word(user_name, 3)
+                    fake_words = await db_functions.get_word(user_name, 3, db_path=DB_PATH)
                     if word not in fake_words:
                         flag = False
                 answers += fake_words

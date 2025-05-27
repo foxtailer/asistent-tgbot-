@@ -1,8 +1,8 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 
-from ...states.user_states import UserState
-from ...services import bot_functions
+from src.states.user_states import UserState
+from src.services import bot_functions
 
 
 play_msg_router = Router()

@@ -1,7 +1,7 @@
 from aiogram import types, Router
 from aiogram.fsm.context import FSMContext
 
-from ...states.user_states import UserState
+from src.states.user_states import UserState
 
 
 shuffle_msg_router = Router()

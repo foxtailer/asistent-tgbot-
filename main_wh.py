@@ -7,7 +7,7 @@ from aiogram.types import Update
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from src.handlers import routers_list
+from src import routers_list
 from src.services.bot_cmds_list import get_command_list
 
 

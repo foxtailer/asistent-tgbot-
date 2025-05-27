@@ -3,9 +3,11 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from ...states.user_states import UserState
-from ...services import db_functions
-from ...services.parse_days import parse_days
+from src.states.user_states import UserState
+from src.services import db_functions
+from src.services.parse_days import parse_days
+from src.config import DB_PATH
+
 
 # TODO print errors iw user ask for day that dont exist.
 
@@ -34,13 +36,13 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
         if args:
             if args[0] == 'd':
-                current_dict = await db_functions.get_day(msg.from_user.first_name, args[1])
+                current_dict = await db_functions.get_day(msg.from_user.first_name, args[1], db_path=DB_PATH)
             elif args[0] == 'w':
                 pass  #TODO show words
         else:
             await msg.answer(error_msg)
     else:
-        current_dict = await db_functions.get_all(msg.chat.first_name)
+        current_dict = await db_functions.get_all(msg.chat.first_name, db_path=DB_PATH)
 
     # current_dict
     # {1: [WordRow(id=28, eng='vargant', rus='бродяга', example='and vargant ronin Jin', day='2024-08-13', lvl=0),...],

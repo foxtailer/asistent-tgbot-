@@ -1,7 +1,7 @@
 from aiogram import  types, Router
 from aiogram.filters import Command
 
-from ...services import db_functions, variables
+from src.services import db_functions, variables
 
 
 start_router = Router()

@@ -1,8 +1,9 @@
 from aiogram import Router, types
 from aiogram.filters import Command
 
-from ...services import db_functions
-from ...services.parse_days import parse_days
+from src.services import db_functions
+from src.services.parse_days import parse_days
+from src.config import DB_PATH
 
 
 del_router = Router()
@@ -31,7 +32,7 @@ async def del_commmand(msg: types.Message, command):
 
         if (days := await parse_days(args)):
 
-            if await db_functions.del_from_db(msg.from_user.first_name, days):
+            if await db_functions.del_from_db(msg.from_user.first_name, days, db_path=DB_PATH):
                 await msg.answer("Sucsess.")
             else:
                 await msg.answer("Failure.")

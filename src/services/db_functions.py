@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import List, Tuple
 from collections import defaultdict, namedtuple
 
-from ..config import DB_PATH
 
+DB_PATH = ''
 
 WordRow = namedtuple("WordRow", ["id", "eng", "rus", "example", "day", "lvl"])
 
@@ -34,7 +34,7 @@ def init_user_db():
     print(f"Connecting to database at ..")
 
     try:
-        with sqlite3.connect(os.path.expanduser('~/newdb.db')) as connection:
+        with sqlite3.connect(DB_PATH) as connection:
             connection.execute("PRAGMA foreign_keys = ON")
             print("Creating tables if not exist...")
                 
@@ -106,7 +106,7 @@ def init_lang_db(language: list[str]):
     print(f"Connecting to database at ..")
 
     try:
-        with sqlite3.connect(os.path.expanduser('~/newdb.db')) as connection:
+        with sqlite3.connect(DB_PATH) as connection:
             connection.execute("PRAGMA foreign_keys = ON")
             print("Creating tables if not exist...")
 
@@ -162,7 +162,7 @@ def init_lang_db(language: list[str]):
         print(f"SQLite error: {e}")
 
 
-async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: str = DB_PATH) -> bool:
+async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: str='') -> bool:
     try:    
         async with aiosqlite.connect(db_path) as connection:
             async with connection.cursor() as cursor:
@@ -182,7 +182,7 @@ async def add_to_db(user_name: str, words: List[Tuple[str, str, str]], db_path: 
         return False
 
 
-async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path=DB_PATH) -> bool:
+async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path='') -> bool:
     try:
         async with aiosqlite.connect(db_path) as connection:
             cursor = await connection.cursor()
@@ -222,7 +222,7 @@ async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path=D
         return False
 
 
-async def create_user(user_name: str, db_path=DB_PATH) -> None:
+async def create_user(user_name: str, db_path='') -> None:
     
     async with aiosqlite.connect(db_path) as conn:
         async with conn.cursor() as cursor:
@@ -239,7 +239,7 @@ async def create_user(user_name: str, db_path=DB_PATH) -> None:
             await conn.commit()
 
 
-async def check_user(user_name:str, db_path=DB_PATH)->bool:
+async def check_user(user_name:str, db_path='')->bool:
      
      async with aiosqlite.connect(db_path) as conn:
         async with conn.cursor() as cursor:
@@ -249,13 +249,13 @@ async def check_user(user_name:str, db_path=DB_PATH)->bool:
             if not user_exists:
                 await cursor.execute("INSERT INTO users (name) VALUES (?)", (user_name,))
                 await conn.commit()
-                await create_user(user_name, DB_PATH)
+                await create_user(user_name, db_path)
                 return False
             else:
                 return True
 
 
-async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[WordRow,]:
+async def get_word(user_name: str, n: int = 1, db_path='') -> list[WordRow,]:
     async with aiosqlite.connect(db_path) as db:
         async with db.cursor() as cursor:
             await cursor.execute(f"SELECT COUNT(*) FROM {user_name}")
@@ -283,7 +283,7 @@ async def get_word(user_name: str, n: int = 1, db_path=DB_PATH) -> list[WordRow,
             return rows_as_tuples
 
 
-async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> dict[int:list[WordRow,]]:
+async def get_day(user_name: str, days: Tuple[int], db_path='') -> dict[int:list[WordRow,]]:
     """
     Return day or days {day_number: [WordRow,...],}
     """
@@ -325,7 +325,7 @@ async def get_day(user_name: str, days: Tuple[int], db_path: str = DB_PATH) -> d
     return result
         
 
-async def get_all(user_name: str, db_path: str = DB_PATH) -> dict[int:list[WordRow]]:
+async def get_all(user_name: str, db_path='') -> dict[int:list[WordRow]]:
     """
     Return all user days {day_number: [WordRow,...],}
     """
@@ -357,6 +357,6 @@ def find_dir_path():
 
 if __name__ == '__main__':
     import sqlite3
-    # init_db_new(["eng", "ru"])
-    # init_db_new(["jp"])
-    #init_user_db()
+    init_lang_db(["eng", "ru"])
+    init_lang_db(["jp"])
+    init_user_db()

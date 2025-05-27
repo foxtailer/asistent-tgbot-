@@ -4,9 +4,10 @@ from aiogram import  types, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
-from ...states.user_states import UserState
-from ...services import bot_functions, db_functions
-from ...services.parse_days import parse_test_args
+from src.states.user_states import UserState
+from src.services import bot_functions, db_functions
+from src.services.parse_days import parse_test_args
+from src.config import DB_PATH
 
 
 test_router = Router()
@@ -53,11 +54,11 @@ async def test(msg: types.Message, command, state:FSMContext, bot):
             new_data['args'] = play_args
 
             if rand_flag:
-                new_data['words'] = await db_functions.get_word(user_name, rand_flag)  # list[WordRow,]
+                new_data['words'] = await db_functions.get_word(user_name, rand_flag, db_path=DB_PATH)  # list[WordRow,]
                 await state.update_data(play=new_data)
                 await bot_functions.play(msg.chat.id, user_name, state, bot=bot)
             else:
-                days = await db_functions.get_day(msg.from_user.first_name,  days[1])  # dict{int:list[WordRow,]}
+                days = await db_functions.get_day(msg.from_user.first_name,  days[1], db_path=DB_PATH)  # dict{int:list[WordRow,]}
                 words = [word for day in days.values() for word in day]
                 new_data['words'] = words  # list[WordRow,]
 

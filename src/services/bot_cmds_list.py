@@ -1,7 +1,7 @@
 from collections import namedtuple
 from aiogram.types import BotCommand
 
-from . import variables
+from src.services import variables
 
 
 def get_command_list(bot_lang):
