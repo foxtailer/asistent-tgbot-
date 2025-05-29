@@ -11,6 +11,7 @@ from .commands.test import test_router
 
 from .msg.play import play_msg_router
 from .msg.shuffle import shuffle_msg_router
+from .msg.search import search_router
 
 
 routers_list = [
@@ -27,6 +28,7 @@ routers_list = [
     shuffle_call_router,
     play_call_router,
     show_call_router,
+    search_router,
 ]
 
 

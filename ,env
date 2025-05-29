@@ -1,1 +1,2 @@
-TOKEN='token'
+TOKEN='<token from BotFather'
+DB_PATH = '<path to db file>'

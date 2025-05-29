@@ -6,13 +6,13 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 # If need proxy on pythneweryvere
 # from aiogram.client.session.aiohttp import AiohttpSession
-# session = AiohttpSession(proxy='http://proxy.server:3128')
 
 from src.handlers import routers_list
 from src.services.bot_cmds_list import get_command_list
 from src.config import TOKEN
 
 
+# session = AiohttpSession(proxy='http://proxy.server:3128')
 bot = Bot(TOKEN,
           default=DefaultBotProperties(parse_mode=ParseMode.HTML)) # session=session # for proxy
 dp = Dispatcher()

@@ -366,6 +366,26 @@ async def get_info(user_name: str, db_path='') -> tuple:
             return await cursor.fetchall()
 
 
+async def search(user_name: str, word: str, db_path='') -> WordRow | None:
+    """
+    ruturn info about amount of days and words of user: (words, days)
+    """
+
+    async with aiosqlite.connect(db_path) as connection:
+        async with connection.execute(
+            f'''
+                SELECT * 
+                FROM {user_name}
+                WHERE eng = '{word}'
+            '''
+            ) as cursor:
+
+            row = await cursor.fetchall()
+            
+            if row:
+                return WordRow(*row[0])
+
+
 def find_dir_path():
     script_path = os.path.realpath(__file__)
     dir_path = os.path.dirname(script_path)
