@@ -30,6 +30,7 @@ async def init_db():
         print(f"SQLite error: {e}")
         
 
+# Future db
 def init_user_db():
     print(f"Connecting to database at ..")
 
@@ -102,6 +103,7 @@ def init_user_db():
         print(f"SQLite error: {e}")
 
 
+# Future db
 def init_lang_db(language: list[str]):
     print(f"Connecting to database at ..")
 
@@ -187,7 +189,7 @@ async def del_from_db(user_name, command_args: Tuple[str, Tuple[int]], db_path='
         async with aiosqlite.connect(db_path) as connection:
             cursor = await connection.cursor()
 
-            if not command_args[0]: 
+            if command_args[0] == 'w': 
                 # Delete by IDs
                 placeholders = ','.join('?' for _ in command_args[1])
                 query = f'DELETE FROM {user_name} WHERE id IN ({placeholders})'
@@ -347,6 +349,21 @@ async def get_all(user_name: str, db_path='') -> dict[int:list[WordRow]]:
             result[day_index].append(WordRow(*row))  # Convert the tuple to a named tuple
 
     return dict(result)
+
+
+async def get_info(user_name: str, db_path='') -> tuple:
+    """
+    ruturn info about amount of days and words of user: (words, days)
+    """
+
+    async with aiosqlite.connect(db_path) as connection:
+        async with connection.execute(
+            f'''
+                SELECT MAX(id), COUNT(DISTINCT day) 
+                FROM {user_name}
+            '''
+            ) as cursor:
+            return await cursor.fetchall()
 
 
 def find_dir_path():

@@ -29,20 +29,6 @@ async def test(msg: types.Message, command, state:FSMContext, bot):
 
     await state.clear()
     await state.set_state(UserState.play)
-    
-    # pattern = re.compile(r'^([sen]*)(r\d+)?(\d+(?:,\d+)*|\d+-\d+|\d+)?$')
-
-    # # 1 are 'default day' TODO store it in cash. it should be last day we use for test
-    # args = '1' if command.args is None else command.args.strip().replace(' ', '')
-    # match = pattern.fullmatch(args)
-
-    # if match:
-    #     play_args, rand_flag, days = match.group(1), match.group(2), match.group(3)
-    # else:
-    #     play_args = ''
-
-    # # args = await parse_test_args(args)
-    # # play_args, rand_flag, days = args['flags'], args['r'], args['days']
 
     if command.args:
         args = await parse_test_args(command.args.replace(' ', '').strip())
