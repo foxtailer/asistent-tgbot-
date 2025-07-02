@@ -5,14 +5,17 @@ from datetime import datetime
 from typing import List, Tuple
 from collections import defaultdict, namedtuple
 
+from src.services.variables import ALLOWED_LANGUAGES
 
-DB_PATH = ''
+
+DB_PATH = 'new_db.db'
 
 WordRow = namedtuple("WordRow", ["id", "eng", "rus", "example", "day", "lvl"])
 
 
 # Old db looks like this
-async def init_db():
+'''
+async def init_db_():
     print(f"Connecting to database at {DB_PATH}")
 
     try:
@@ -29,138 +32,120 @@ async def init_db():
             print("Table created or already exists.")
     except aiosqlite.Error as e:
         print(f"SQLite error: {e}")
-        
+
+async def create_user(user_name: str, db_path='') -> None:    
+    async with aiosqlite.connect(db_path) as conn:
+        async with conn.cursor() as cursor:
+            await cursor.execute(f"""
+                CREATE TABLE IF NOT EXISTS {user_name} (
+                    id INTEGER PRIMARY KEY,
+                    eng TEXT NOT NULL UNIQUE,
+                    rus TEXT NOT NULL,
+                    example TEXT,
+                    day TEXT,
+                    lvl INTEGER DEFAULT 0
+                )
+            """)
+            await conn.commit()
+
+'''
+
 
 # Future db
-def init_user_db():
+def init_db(connection, language: list[str]):
     print(f"Connecting to database at ..")
 
     try:
-        with sqlite3.connect(DB_PATH) as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
-            print("Creating tables if not exist...")
-                
+        connection.execute("PRAGMA foreign_keys = ON")
+        print("Creating tables if not exist...")
+
+        connection.execute(f"""
+            CREATE TABLE IF NOT EXISTS user (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tg_id INTEGER NOT NULL,
+                name TEXT,
+                words INTEGER
+            )
+        """)
+
+        connection.execute(f"""
+            CREATE TABLE IF NOT EXISTS dict (
+                user INTEGER REFERENCES user(id),
+                date TEXT NOT NULL DEFAULT (DATETIME('now'))
+            )
+        """)
+
+        connection.execute(f"""
+            CREATE TABLE IF NOT EXISTS examples (
+                user INTEGER REFERENCES user(id),
+                ex INTEGER
+            )
+        """)
+
+        connection.execute(f"""
+            CREATE TABLE IF NOT EXISTS progress (
+                user INTEGER REFERENCES user(id),
+                lvl INTEGER
+            )
+        """)
+
+        for i in language:
+            lang = i.upper()
+
+            if lang not in ALLOWED_LANGUAGES:
+                raise ValueError(f"Invalid language: {lang}")
+            
             connection.execute(f"""
-                CREATE TABLE IF NOT EXISTS user (
+                CREATE TABLE IF NOT EXISTS {lang}_WORD (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    tg_id INTEGER NOT NULL,
-                    name TEXT,
-                    lvl INTEGER,
-                    words INTEGER
+                    word TEXT NOT NULL,
+                    cefr TEXT,
+                    freq INTEGER
                 )
+            """)
+
+            connection.execute(f"""
+                CREATE TABLE IF NOT EXISTS {lang}_SYN (
+                    word INTEGER,
+                    syn INTEGER,
+                    FOREIGN KEY (word) REFERENCES {lang}_WORD(id),
+                    FOREIGN KEY (syn) REFERENCES {lang}_WORD(id),
+                    PRIMARY KEY (word, syn)
+                )
+            """)
+
+            connection.execute(f"""
+                CREATE TABLE IF NOT EXISTS {lang}_ANT (
+                    word INTEGER,
+                    ant INTEGER,
+                    FOREIGN KEY (word) REFERENCES {lang}_WORD(id),
+                    FOREIGN KEY (ant) REFERENCES {lang}_WORD(id),
+                    PRIMARY KEY (word, ant)
+                )
+            """)
+
+            connection.execute(f"""
+                CREATE TABLE IF NOT EXISTS {lang}_EX (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    word INTEGER NOT NULL,
+                    text TEXT,
+                    FOREIGN KEY (word) REFERENCES {lang}_WORD(id)
+                )
+            """)
+
+            connection.execute(f"""
+                ALTER TABLE progress ADD COLUMN {lang.lower()} INTEGER;
             """)
             connection.execute(f"""
-                CREATE TABLE IF NOT EXISTS dict (
-                    user INTEGER,
-                    eng INTEGER,
-                    ru INTEGER,
-                    jp INTEGER,
-                    date TEXT DEFAULT (DATETIME('now')),
-                    FOREIGN KEY (user) REFERENCES user(id),
-                    FOREIGN KEY (eng) REFERENCES ENG(id),
-                    FOREIGN KEY (ru) REFERENCES RU(id),
-                    FOREIGN KEY (jp) REFERENCES JP(id),
-                    UNIQUE (user, eng),
-                    UNIQUE (user, ru),
-                    UNIQUE (user, jp)
-                )
+                ALTER TABLE dict ADD COLUMN {lang.lower()} INTEGER;
             """)
             connection.execute(f"""
-                CREATE TABLE IF NOT EXISTS examples (
-                    user INTEGER,
-                    eng INTEGER,
-                    ru INTEGER,
-                    jp INTEGER,
-                    ex INTEGER,
-                    FOREIGN KEY (user) REFERENCES user(id),
-                    FOREIGN KEY (eng) REFERENCES ENG(id),
-                    FOREIGN KEY (ru) REFERENCES RU(id),
-                    FOREIGN KEY (jp) REFERENCES JP(id),
-                    CHECK (
-                        (eng IS NOT NULL) + (ru IS NOT NULL) + (jp IS NOT NULL) = 1
-                    )
-                )
-            """)
-            connection.execute(f"""
-                CREATE TABLE IF NOT EXISTS progress (
-                    user INTEGER,
-                    eng INTEGER,
-                    ru INTEGER,
-                    jp INTEGER,
-                    lvl INTEGER,
-                    FOREIGN KEY (user) REFERENCES user(id),
-                    FOREIGN KEY (eng) REFERENCES ENG(id),
-                    FOREIGN KEY (ru) REFERENCES RU(id),
-                    FOREIGN KEY (jp) REFERENCES JP(id),
-                    CHECK (
-                        (eng IS NOT NULL) + (ru IS NOT NULL) + (jp IS NOT NULL) = 1
-                    )
-                )
+                ALTER TABLE examples ADD COLUMN {lang.lower()} INTEGER;
             """)
 
-            connection.commit()
-            print("Tables created or already exist.")
-    except sqlite3.Error as e:
-        print(f"SQLite error: {e}")
+        connection.commit()
+        print("Tables created or already exist.")
 
-
-# Future db
-def init_lang_db(language: list[str]):
-    print(f"Connecting to database at ..")
-
-    try:
-        with sqlite3.connect(DB_PATH) as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
-            print("Creating tables if not exist...")
-
-            for i in language:
-                lang = i.upper()
-                
-                connection.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {lang} (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        word TEXT NOT NULL,
-                        cefr TEXT,
-                        freq INTEGER
-                    )
-                """)
-                connection.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {lang}_SYN (
-                        word INTEGER,
-                        syn INTEGER,
-                        FOREIGN KEY (word) REFERENCES {lang}(id),
-                        FOREIGN KEY (syn) REFERENCES {lang}(id),
-                        PRIMARY KEY (word, syn)
-                    )
-                """)
-                connection.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {lang}_ANT (
-                        word INTEGER,
-                        ant INTEGER,
-                        FOREIGN KEY (word) REFERENCES {lang}(id),
-                        FOREIGN KEY (ant) REFERENCES {lang}(id),
-                        PRIMARY KEY (word, ant)
-                    )
-                """)
-                connection.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {lang}_POS (
-                        word INTEGER,
-                        pos TEXT,
-                        FOREIGN KEY (word) REFERENCES {lang}(id),
-                        PRIMARY KEY (word, pos)
-                    )
-                """)
-                connection.execute(f"""
-                    CREATE TABLE IF NOT EXISTS {lang}_EX (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        word INTEGER NOT NULL,
-                        text TEXT,
-                        FOREIGN KEY (word) REFERENCES {lang}(id)
-                    )
-                """)
-
-            connection.commit()
-            print("Tables created or already exist.")
     except sqlite3.Error as e:
         print(f"SQLite error: {e}")
 
@@ -385,16 +370,3 @@ async def search(user_name: str, word: str, db_path='') -> WordRow | None:
             
             if row:
                 return WordRow(*row[0])
-
-
-def find_dir_path():
-    script_path = os.path.realpath(__file__)
-    dir_path = os.path.dirname(script_path)
-    return dir_path
-
-
-if __name__ == '__main__':
-    import sqlite3
-    init_lang_db(["eng", "ru"])
-    init_lang_db(["jp"])
-    init_user_db()

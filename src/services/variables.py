@@ -100,3 +100,28 @@ COMAND_TITLES_RU = (
     'Удалить слово/слова',
     'Запустить бота',
 )
+
+ALLOWED_LANGUAGES = {
+    "EN",  # English
+    "ZH",  # Chinese (Mandarin)
+    "HI",  # Hindi
+    "ES",  # Spanish
+    "FR",  # French
+    "AR",  # Arabic
+    "BN",  # Bengali
+    "RU",  # Russian
+    "PT",  # Portuguese
+    "UR",  # Urdu
+    "ID",  # Indonesian
+    "DE",  # German
+    "JA",  # Japanese
+    "SW",  # Swahili
+    "MR",  # Marathi
+    "TE",  # Telugu
+    "VI",  # Vietnamese
+    "KO",  # Korean
+    "TR",  # Turkish
+    "IT",  # Italian
+    "PL",  # Polish
+    "UA",
+}
