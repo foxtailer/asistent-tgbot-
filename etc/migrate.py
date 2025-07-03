@@ -21,8 +21,11 @@ for row in source_cur:
     en_id = target_cur.lastrowid
     target_cur.execute("INSERT INTO RU_WORD (word) VALUES (?)", (row[2],))
     ru_id = target_cur.lastrowid
-    target_cur.execute("INSERT INTO EN_EX (word, text) VALUES (?, ?)", (en_id, row[3],))
-    target_cur.execute("INSERT INTO dict (word, text) VALUES (?, ?)", (en_id, row[3],))
+    target_cur.execute("INSERT INTO EN_EX (word, text) VALUES (?, ?)", (en_id, row[3]))
+    ex = target_cur.lastrowid
+    target_cur.execute("INSERT INTO dict (user, date, ru, en) VALUES (?, ?, ?, ?)", (1, row[4], ru_id, en_id))
+    target_cur.execute("INSERT INTO examples (user, ex, en) VALUES (?, ?, ?)", (1, ex, en_id))
+    target_cur.execute("INSERT INTO progress (user, lvl, en) VALUES (?, ?, ?)", (1, 0, en_id))
 
 target_conn.commit()
 
