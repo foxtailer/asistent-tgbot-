@@ -8,12 +8,12 @@ start_router = Router()
 
 
 @start_router.message(Command("start"))
-async def start_commmand(msg: types.Message):
+async def start_commmand(msg: types.Message, conn):
     # await db_functions.init_db()
 
     text = "We hope our bot can help you learn any language :)"
 
-    if await db_functions.check_user(msg.from_user.id, msg.from_user.first_name, 1):
+    if await db_functions.check_user(msg.from_user.id, msg.from_user.first_name, conn):
         await msg.answer(f'Hello {msg.from_user.first_name}! 👋\n{text}\n\n'
                             'You can select bot language.\n'
                             '(Выберите язык бота)\n\n'

@@ -1,6 +1,7 @@
 import requests
 import asyncio
 
+import aiosqlite
 from aiogram import Bot, types, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -9,7 +10,7 @@ from aiogram.enums import ParseMode
 
 from src.handlers import routers_list
 from src.services.bot_cmds_list import get_command_list
-from src.config import TOKEN
+from src.config import TOKEN, DB_PATH
 
 
 # session = AiohttpSession(proxy='http://proxy.server:3128')
@@ -34,12 +35,25 @@ else:
 # ---------------------------------------
 
 
+async def init_conn():
+    return await aiosqlite.connect(DB_PATH)
+
+
+async def on_shutdown(conn):
+    await conn.close()
+    print('by-by')
+
+
 async def main():
+    conn = await init_conn()
+    dp.shutdown.register(on_shutdown)
+
     await bot.delete_webhook(drop_pending_updates=True)
     await bot.set_my_commands(commands=get_command_list('RU'), scope=types.BotCommandScopeAllPrivateChats())
     await dp.start_polling(bot, 
                            allowed_updates=["message", "edited_message", "callback_query", "inline_query"],
-                           polling_timeout=20)
+                           polling_timeout=20,
+                           conn=conn)
 
 
 if __name__ == '__main__':
