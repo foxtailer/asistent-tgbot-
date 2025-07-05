@@ -1,4 +1,4 @@
-import sqlite3
+import aiosqlite
 
 import pytest
 
@@ -6,8 +6,8 @@ from src.services.db_functions import init_db
 
 
 @pytest.fixture
-def in_memory_db():
-    conn = sqlite3.connect(":memory:")
-    init_db(conn, language=['EN', 'JA'])
+async def in_memory_db_conn():
+    conn = await aiosqlite.connect(":memory:")
+    await init_db(conn, language=['EN', 'RU'])
     yield conn
-    conn.close()
+    await conn.close()

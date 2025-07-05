@@ -46,6 +46,7 @@ async def on_shutdown(conn):
 
 async def main():
     conn = await init_conn()
+    print(type(conn))
     dp.shutdown.register(on_shutdown)
 
     await bot.delete_webhook(drop_pending_updates=True)

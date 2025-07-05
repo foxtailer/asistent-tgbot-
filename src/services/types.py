@@ -3,11 +3,14 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, field_validator
 
+from src.services.variables import ALLOWED_LANGUAGES
 
-class Word(BaseModel):
-    language: str
+
+class WordRow(BaseModel):
+    language: tuple[str, str]
     word: str
-    date: date
+    trans: str
+    date: date | str
     example: str | None = None
     freq: int | None = None
     cefr: str | None = None
@@ -22,3 +25,10 @@ class Word(BaseModel):
             return v
         else:
             raise ValueError('date must be a string, date, or datetime')
+        
+    @field_validator('language')
+    def validate_languages(cls, v):
+        for lang in v:
+            if lang not in ALLOWED_LANGUAGES:
+                raise ValueError(f"Language '{lang}' is not in allowed languages: {ALLOWED_LANGUAGES}")
+        return v

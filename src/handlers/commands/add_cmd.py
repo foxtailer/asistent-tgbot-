@@ -5,7 +5,7 @@ from aiogram.filters import Command
 
 from src.services import db_functions
 from src.config import DB_PATH
-from src.services.types import Word
+from src.services.types import WordRow
 
 
 async def args_str_validate(args_):
@@ -18,14 +18,14 @@ async def args_str_validate(args_):
     words = [
         {
             'language': ('EN', 'RU'),
-            'word': en,
-            'trans': ru,
+            'word': w,
+            'trans': t,
             'date': datetime.now().strftime('%Y-%m-%d'),
             'example': ex
         }
-        for en, ru, ex in words
+        for w, t, ex in words
     ]
-    words = [Word(**w) for w in words]
+    words = [WordRow(**w) for w in words]
 
     return words
 

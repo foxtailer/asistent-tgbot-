@@ -15,7 +15,7 @@ show_router = Router()
 
 
 @show_router.message(Command("show"))
-async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Time"):
+async def show_commmand(msg: types.Message, state:FSMContext, command, conn, sort="Time"):
 
     error_msg = "Need number argument! Like this:\n/show 5\nor\n/show 5,7,12\n"\
                 "To show sequense of deys use:\n/show 5-12"
@@ -36,13 +36,13 @@ async def show_commmand(msg: types.Message, state:FSMContext, command, sort="Tim
 
         if args:
             if args[0] == 'd':
-                current_dict = await db_functions.get_day(msg.from_user.first_name, args[1], db_path=DB_PATH)
+                current_dict = await db_functions.get_day(msg.from_user.id, args[1], conn)
             elif args[0] == 'w':
                 pass  #TODO show words
         else:
             await msg.answer(error_msg)
     else:
-        current_dict = await db_functions.get_all(msg.chat.first_name, db_path=DB_PATH)
+        current_dict = await db_functions.get_all(msg.chat.id, conn)
 
     # current_dict
     # {1: [WordRow(id=28, eng='vargant', rus='бродяга', example='and vargant ronin Jin', day='2024-08-13', lvl=0),...],
