@@ -2,7 +2,7 @@ import random
 from collections import defaultdict
 
 from src.services.variables import ALLOWED_LANGUAGES
-from src.services.types import WordRow
+from src.services.types_ import WordRow, Word
 
 
 async def init_db(conn, language: list[str]):
@@ -17,7 +17,7 @@ async def init_db(conn, language: list[str]):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tg_id INTEGER NOT NULL,
                 name TEXT,
-                words INTEGER DEFAULT 0
+                args_ INTEGER DEFAULT 0
             )
         """)
 
@@ -102,68 +102,78 @@ async def init_db(conn, language: list[str]):
         print(f"SQLite error: {e}")
 
 
-async def add_to_db(tg_id: int, words: list[WordRow], conn) -> bool:
+async def add_to_db(tg_id: int, args_: list[WordRow], conn) -> bool:
     try:    
         async with conn.execute("SELECT id FROM user WHERE tg_id = ?", (tg_id,)) as cursor:
             row = await cursor.fetchone()
             if not row:
                 print("User not found")
                 return False
-            tg_id = row[0]
+            user_id = row[0]
 
-        for word in words:
+        for w in args_:
             cursor = await conn.execute(
-                f"INSERT INTO {word.language[0]}_WORD (word) VALUES (?)", 
-                (word.word,))
+                f"INSERT INTO {w.language[0]}_WORD (word) VALUES (?)", 
+                (w.word.text,))
             w_id = cursor.lastrowid
 
             cursor = await conn.execute(
-                f"INSERT INTO {word.language[1]}_WORD (word) VALUES (?)",
-                (word.trans,))
+                f"INSERT INTO {w.language[1]}_WORD (word) VALUES (?)",
+                (w.trans[0].text,))
             t_id = cursor.lastrowid
 
-            if word.example:
+            if w.example:
                 cursor = await conn.execute(
-                    f"INSERT INTO {word.language[0]}_EX (word, text) VALUES (?, ?)",
-                    (w_id, word.example))
+                    f"INSERT INTO {w.language[0]}_EX (word, text) VALUES (?, ?)",
+                    (w_id, w.example[0][0]))
                 ex = cursor.lastrowid
             else:
                 ex = None
 
-            l1, l2 = word.language[0].lower(), word.language[1].lower()
+            l1, l2 = w.language[0].lower(), w.language[1].lower()
 
             await conn.execute(
                 f"INSERT INTO dict (user, date, {l1}, {l2}) VALUES (?, ?, ?, ?)",
-                (tg_id, word.date, w_id, t_id))
+                (user_id, w.date, w_id, t_id))
 
             if ex is not None:
                 await conn.execute(
                     f"INSERT INTO examples (user, ex, {l1}) VALUES (?, ?, ?)",
-                    (tg_id, ex, w_id))
+                    (user_id, ex, w_id))
 
             await conn.execute(
                 f"INSERT INTO progress (user, lvl, {l1}) VALUES (?, ?, ?)",
-                (tg_id, 0, w_id))
-        
+                (user_id, 0, w_id))
+            
+            async with conn.execute("SELECT args_ FROM user WHERE tg_id = ?",
+                                    (tg_id,)) as cursor:
+                args_ = await cursor.fetchone()
+
+            w_amount = args_[0] + 1
+
+            await conn.execute("UPDATE user SET args_ = ? WHERE tg_id = ?",
+                (w_amount, tg_id)
+)
         await conn.commit()  
         return True
+    
     except Exception as e:
         print(f"add_to_db error: {e}")
         return False
 
 
-async def del_from_db(tg_id, command_args: tuple[str, tuple[int]], conn) -> bool:
+async def del_from_db(tg_id, args_: tuple[str, tuple[int]], conn) -> bool:
     try:
         async with conn.conn() as conn:
-            if command_args[0] == 'w': 
+            if args_[0] == 'w': 
                 # Delete by IDs
-                placeholders = ','.join('?' for _ in command_args[1])
+                placeholders = ','.join('?' for _ in args_[1])
                 query = f'DELETE FROM {tg_id} WHERE id IN ({placeholders})'
-                await conn.execute(query, command_args[1])
+                await conn.execute(query, args_[1])
 
             else:
                 # Delete by day numbers
-                day_numbers = command_args[1]
+                day_numbers = args_[1]
                 
                 # Validate day_numbers
                 query = f"SELECT COUNT(DISTINCT day) FROM {tg_id}"
@@ -186,7 +196,7 @@ async def del_from_db(tg_id, command_args: tuple[str, tuple[int]], conn) -> bool
             return True
 
     except Exception as e:
-        print(f"Error during database deletion: {e}") 
+        print(f"del_from_db error: {e}") 
         return False
 
 
@@ -298,7 +308,7 @@ async def get_all(tg_id: int, conn) -> dict[int:list[WordRow]]:
 
 async def get_info(tg_id: int, conn) -> tuple:
     """
-    ruturn info about amount of days and words of user: (words, days)
+    ruturn info about amount of days and args_ of user: (args_, days)
     """
 
     async with conn.conn() as conn:
@@ -313,7 +323,7 @@ async def get_info(tg_id: int, conn) -> tuple:
 
 async def search(tg_id: int, word: str, conn):
     """
-    ruturn info about amount of days and words of user: (words, days)
+    ruturn info about amount of days and args_ of user: (args_, days)
     """
 
     async with conn.conn() as conn:
@@ -329,3 +339,25 @@ async def search(tg_id: int, word: str, conn):
             
             if row:
                 return WordRow(*row[0])
+
+
+# #import pudb; pudb.set_trace()
+
+async def main():
+    from datetime import date
+    import aiosqlite
+
+    conn = await aiosqlite.connect("/home/zoy/git/asistent-tgbot-/new_db2.db")
+    args_ = [WordRow(**{
+             "language": ('EN', 'RU'), 
+             "word": Word(**{"text": 'test', "tg_id": 123}), 
+             "trans": (Word(**{"text": 'тест', "tg_id": 123}),),
+             "date": date.today().strftime('%Y-%m-%d'),
+             "example": (('Test there.',),)}
+    )]
+    await add_to_db(123, args_, conn)
+
+
+if __name__ == "__main__":
+     import asyncio
+     asyncio.run(main())

@@ -1,12 +1,13 @@
 import re
-from typing import Tuple
+
+from src.services.types_ import DelArgs
 
 
-async def parse_days(string: str) -> tuple[str, Tuple[int]]:
+async def parse_days(args_: str) -> DelArgs:
     '''
     Parse days/words range from comands args.
-    'd' - default flag for 'days'.
-    [w]{[\d,\d...]|[\d-\d]|[\d]}  else => None
+    'w' - default flag for 'days'.
+    [w|d]{\d,\d,...| \d-\d | \d}
     
     >>> import asyncio
     >>> asyncio.run(parse_days('v10-12'))  # onlly 'w' allower as first letter flag
@@ -29,17 +30,17 @@ async def parse_days(string: str) -> tuple[str, Tuple[int]]:
 
     flag = 'd'
 
-    if string.startswith('w'):
+    if args_.startswith('w'):
         flag = 'w'
-        string = string[1:]
-    elif string[0].isalpha():
+        args_ = args_[1:]
+    elif args_[0].isalpha():
         return None
 
     # Validate format: digits only, optionally separated by , or -
-    if not re.fullmatch(r"\d+([,-]\d+)*", string):
+    if not re.fullmatch(r"\d+([,-]\d+)*", args_):
         return None
 
-    parts = string.split(',')
+    parts = args_.split(',')
     result = []
 
     try:

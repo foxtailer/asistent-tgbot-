@@ -1,30 +1,36 @@
 import re
-from datetime import date, datetime
+from datetime import date
 
 from pydantic import BaseModel, field_validator
 
 from src.services.variables import ALLOWED_LANGUAGES
 
 
+class Word(BaseModel):
+    text: str
+    tg_id: int
+    id_: int | None = None
+
+
 class WordRow(BaseModel):
-    language: tuple[str, str]
-    word: str
-    trans: str
+    language: tuple[str, ...]
+    word: Word
+    trans: tuple[Word, ...]
     date: date | str
-    example: str | None = None
+    example: tuple[tuple[str]] | None = None
     freq: int | None = None
     cefr: str | None = None
 
     @field_validator('date', mode='before')
-    def ensure_date_format(cls, v):
-        if isinstance(v, (datetime, date)):
+    def validate_date_format(cls, v):
+        if isinstance(v, (date)):
             return v.strftime('%Y-%m-%d')
         elif isinstance(v, str):
             if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', v):
                 raise ValueError('date must be in format YYYY-MM-DD')
             return v
         else:
-            raise ValueError('date must be a string, date, or datetime')
+            raise ValueError('date must be a string, or date')
         
     @field_validator('language')
     def validate_languages(cls, v):
