@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 
 from src.states.user_states import UserState
 from src.services import bot_functions, db_functions
-from src.services.parse_days import parse_test_args
+from src.services.parse_args import parse_test_args
 from src.config import DB_PATH
 
 

@@ -5,6 +5,7 @@ from aiogram.filters import Command
 
 from src.services import db_functions
 from src.services.types_ import WordRow, Word
+from src.services.parse_args import args_add_validate
 
 
 add_router = Router()
@@ -23,7 +24,7 @@ async def add_commmand(msg: types.Message, command, conn):
                 "Coma after last set lead to error."
     
     if (args := command.args):
-        words = await args_str_validate(args, msg.from_user.id)
+        words = await args_add_validate(args, msg.from_user.id)
 
         if not words:
             await msg.answer(error_msg)
@@ -35,28 +36,3 @@ async def add_commmand(msg: types.Message, command, conn):
             await msg.answer("Error!")
     else:
         await msg.answer(error_msg)
-
-
-async def args_str_validate(args_, user_id):
-    result = [element.lower().strip() for element in args_.split(',')]
-
-    if (len(result) % 3) != 0:
-        return False
-    
-    # Made list of tuples[(word, translation, example),...]
-    result = [tuple(result[i:i + 3]) for i in range(0, len(result), 3)]
-
-    result = [
-        {
-            'language': ('EN', 'RU'),
-            'word': Word(word=w, tg_id=user_id),
-            'trans': (Word(word=t, tg_id=user_id),),
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'example': ((ex,),)
-        }
-        for w, t, ex in result
-    ]
-
-    result = [WordRow(**w) for w in result]
-
-    return result

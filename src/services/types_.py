@@ -38,3 +38,19 @@ class WordRow(BaseModel):
             if lang not in ALLOWED_LANGUAGES:
                 raise ValueError(f"Language '{lang}' is not in allowed languages: {ALLOWED_LANGUAGES}")
         return v
+
+
+class DelArgs(BaseModel):
+    flags: tuple[str, ...]
+    range: tuple[int, ...]
+    words: tuple[str, ...] | None = None
+
+    @field_validator('flags')
+    def validate_flags(cls, v):
+        allowed_flags = {'d', 'w', 's'}
+        for flag in v:
+            if flag not in allowed_flags:
+                raise ValueError(f"Invalid flag '{flag}'. Allowed flags: {allowed_flags}")
+        if len(v) > 1:
+            raise ValueError(f"Invalid flag '{v}'. Allowed flags: {allowed_flags}")
+        return v

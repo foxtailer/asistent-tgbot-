@@ -5,7 +5,7 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 from src.states.user_states import UserState
 from src.services import db_functions
-from src.services.parse_days import parse_days
+from src.services.parse_args import parse_days
 from src.config import DB_PATH
 
 
