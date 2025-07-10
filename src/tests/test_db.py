@@ -34,4 +34,15 @@ async def test_add_to_db():
         words = await cursor.fetchone()
         assert words[0] == 1
 
+    await add_to_db(123, data, conn)
+
+    async with conn.execute("SELECT * FROM EN_WORD") as cursor:
+        en_word_row = await cursor.fetchall()
+        assert len(en_word_row) == 1
+        assert en_word_row[0] == (1, 'test', None, None)
+
+    async with conn.execute("SELECT words FROM user WHERE tg_id=123") as cursor:
+        words = await cursor.fetchone()
+        assert words[0] == 1
+
     await conn.close()

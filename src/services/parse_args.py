@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 
-from src.services.types_ import Word, WordRow
+from src.services.types_ import Word, WordRow, DelArgs
 
 
 async def args_day_word_validate(args_: str) -> dict | None:
@@ -54,32 +54,50 @@ async def args_day_word_validate(args_: str) -> dict | None:
         else:
             result.append(int(part))
 
-    return {"flags": (flag,), "range": tuple(result)}
+    args_dict = {"flags": (flag,), "range": tuple(result)}
+
+    try:
+        return DelArgs(**args_dict)
+    except Exception as e:
+        print(e)
+        return False
 
 
-async def args_add_validate(args_, user_id):
+async def args_add_validate(args_):
+    # [word, translation, example, word, translation, example,...] =>
     result = [element.lower().strip() for element in args_.split(',')]
 
     if (len(result) % 3) != 0:
         return False
     
-    # Made list of tuples[(word, translation, example),...]
-    result = [tuple(result[i:i + 3]) for i in range(0, len(result), 3)]
+    # word or example are independent Word of some language
+    # [(word, example),(translation), (word, example),(translation)...] =>
+    # [(word, example, lang), (word, example, lang),...]
+    result = [item for i in range(0, len(result), 3) 
+                        for item in [ (result[i], result[i+2], "EN"), (result[i+1], None, "RU") ]]
 
     result = [
-        {
-            'language': ('EN', 'RU'),
-            'word': Word(word=w, tg_id=user_id),
-            'trans': (Word(word=t, tg_id=user_id),),
-            'date': datetime.now().strftime('%Y-%m-%d'),
-            'example': ((ex,),)
-        }
-        for w, t, ex in result
+        Word(**{
+            "text": i[0],
+            "example": i[1],
+            "language": i[2],
+        })
+        for i in result
     ]
 
-    result = [WordRow(**w) for w in result]
+    tmp = ([],[])
 
-    return result
+    for i in result:
+        if i.language == "EN":
+            tmp[0].append(i)
+        else:
+            tmp[1].append(i)
+
+    try:
+        return WordRow(**{"words":tmp, "date": datetime.now(), 'languages': ('EN', 'RU')})
+    except Exception as e:
+        print(e)
+        return False
 
 
 # async def parse_test_args(args_):

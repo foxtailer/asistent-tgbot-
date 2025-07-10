@@ -4,7 +4,6 @@ from aiogram import Router, types
 from aiogram.filters import Command
 
 from src.services import db_functions
-from src.services.types_ import WordRow, Word
 from src.services.parse_args import args_add_validate
 
 

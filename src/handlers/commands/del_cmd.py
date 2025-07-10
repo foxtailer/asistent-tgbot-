@@ -3,7 +3,6 @@ from aiogram.filters import Command
 
 from src.services.db_functions import del_from_db, get_info
 from src.services.parse_args import args_day_word_validate
-from src.services.types_ import DelArgs
 
 
 del_router = Router()
@@ -21,12 +20,7 @@ async def del_commmand(msg: types.Message, command, conn):
                 "2-5 - mean range of day/words from 2 to 5(2,3,4,5)"
     
     if (args := command.args):
-        args_dict = await args_day_word_validate(args.replace(' ', '').strip())
-
-        if args_dict:
-            args = DelArgs(**args_dict)
-        else :
-            await msg.answer(error_msg)
+        args = await args_day_word_validate(args.replace(' ', '').strip())
 
         if args:
             if await del_from_db(msg.from_user.id, args, conn):
