@@ -15,6 +15,7 @@ class Word(BaseModel):
     id_: int | None = None
 
     @field_validator('language')
+    @classmethod
     def validate_languages(cls, v):
         if v not in ALLOWED_LANGUAGES:
             raise ValueError(
@@ -29,6 +30,7 @@ class WordRow(BaseModel):
     date: date | str
 
     @field_validator('date', mode='before')
+    @classmethod
     def validate_date_format(cls, v):
         if isinstance(v, (date)):
             return v.strftime('%Y-%m-%d')
@@ -51,6 +53,16 @@ class WordRow(BaseModel):
         if len(lengths) > 1:
             raise ValueError(f"All inner tuples in 'words' must have the same length, found lengths: {lengths}")
         return self
+    
+    @field_validator('languages')
+    @classmethod
+    def validate_languages(cls, langs):
+        for lang in langs:
+            if lang not in ALLOWED_LANGUAGES:
+                raise ValueError(
+                    f"Language '{lang}' is not in allowed languages: {ALLOWED_LANGUAGES}"
+                )
+        return langs
 
 
 class DelArgs(BaseModel):
@@ -60,6 +72,7 @@ class DelArgs(BaseModel):
     words: tuple[str, ...] | None = None
 
     @field_validator('flags')
+    @classmethod
     def validate_flags(cls, v):
         allowed_flags = {'d', 'w', 's'}
         for flag in v:
@@ -70,6 +83,7 @@ class DelArgs(BaseModel):
         return v
     
     @field_validator('language')
+    @classmethod
     def validate_languages(cls, v):
         if v not in ALLOWED_LANGUAGES:
             raise ValueError(f"Language '{v}' is not in allowed languages: {ALLOWED_LANGUAGES}")

@@ -1,13 +1,16 @@
 import random
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from src.services.variables import ALLOWED_LANGUAGES
 from src.services.types_ import WordRow, Word, DelArgs
 
 
+LangOrder = namedtuple('LangOrder', ['number', 'name'])
+
+
 async def init_db(conn, language: list[str]):
     print(f"Connecting to database at ..")
-
+    
     try:
         await conn.execute("PRAGMA foreign_keys = ON")
         print("Creating tables if not exist...")
@@ -16,8 +19,7 @@ async def init_db(conn, language: list[str]):
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 tg_id INTEGER NOT NULL UNIQUE,
-                name TEXT,
-                words INTEGER DEFAULT 0
+                name TEXT
             )
         """)
 
@@ -25,7 +27,8 @@ async def init_db(conn, language: list[str]):
             CREATE TABLE IF NOT EXISTS dict (
                 user INTEGER REFERENCES users(id),
                 date TEXT NOT NULL DEFAULT (DATETIME('now')),
-                archive BOOLEAN NOT NULL DEFAULT 0
+                archive BOOLEAN NOT NULL DEFAULT 0,
+                lvl INTEGER DEFAULT 0
             )
         """)
 
@@ -39,13 +42,6 @@ async def init_db(conn, language: list[str]):
             CREATE TABLE IF NOT EXISTS examples (
                 user INTEGER REFERENCES users(id),
                 ex INTEGER
-            )
-        """)
-
-        await conn.execute(f"""
-            CREATE TABLE IF NOT EXISTS progress (
-                user INTEGER REFERENCES users(id),
-                lvl INTEGER DEFAULT 0
             )
         """)
 
@@ -92,10 +88,6 @@ async def init_db(conn, language: list[str]):
                 )
             """)
 
-
-            await conn.execute(f"""
-                ALTER TABLE progress ADD COLUMN {lang.lower()} INTEGER;
-            """)
             await conn.execute(f"""
                 ALTER TABLE dict ADD COLUMN {lang.lower()} INTEGER;
             """)
@@ -114,48 +106,73 @@ async def init_db(conn, language: list[str]):
 
 
 async def add_to_db(tg_id: int, args_: WordRow, conn) -> bool:
-    try:    
-        user_id = get_user_id(tg_id, conn)
+    try:
+        user_id = await get_user_id(tg_id, conn)
 
-        for i in len(args_.words[0]):
-            for lang in enumerate(args_.languages):
+        for word_number in range(len(args_.words[0])):
+            column_languages = []
+            column_words_ids = []
+
+            for __ in enumerate(args_.languages):
+                l = LangOrder(*__)
+                column_languages.append(l.name.lower())
+
                 cursor = await conn.execute(
-                    f"INSERT OR IGNORE INTO {lang[1]}_WORD (word) VALUES (?)", 
-                    (word := args_.words[lang[0]][i].text))
+                    f"INSERT OR IGNORE INTO {l.name}_WORD (word) VALUES (?)", 
+                    ((word := args_.words[l.number][word_number]).text,))
                 word.id_ = cursor.lastrowid
-
+                
                 if cursor.rowcount != 1:
                     cursor = await conn.execute(
-                        f"SELECT id FROM {lang[1]}_WORD WHERE word = ?", 
+                        f"SELECT id FROM {l.name}_WORD WHERE word = ?", 
                         (word.text,))
-                    word.id_ = cursor.lastrowid
+                    row = await cursor.fetchone()
+                    word.id_ = row[0]
 
-                async with conn.execute(
-                        "SELECT words FROM users WHERE tg_id = ?", (tg_id,)) as cursor:
-                        words_amount = await cursor.fetchone()
-                        new_amount = words_amount[0] + 1
+                column_words_ids.append(word.id_)
 
-                await conn.execute("UPDATE users SET words = ? WHERE tg_id = ?",
-                    (new_amount, tg_id))
+                cursor = await conn.execute(
+                    f"INSERT OR IGNORE INTO dict (user, date, {l.name.lower()}) VALUES (?, ?, ?)",
+                    (user_id, args_.date, word.id_)
+                )
 
-            if word.examples:
-                for example in word.examples:
-                    cursor = await conn.execute(
-                        f"INSERT OR IGNORE INTO {word.language}_EX (word, text) VALUES (?, ?)",
-                        (word.id_, example))
-                    ex_id = cursor.lastrowid
+                if word.examples:
+                    for example in word.examples:
+                        cursor = await conn.execute(
+                            f"INSERT OR IGNORE INTO {l.name}_EX (word, text) VALUES (?, ?)",
+                            (word.id_, example))
+                        ex_id = cursor.lastrowid
 
-                    await conn.execute(
-                        f"INSERT INTO examples (user, ex, {word.language.lower()}) VALUES (?, ?, ?)",
-                        (user_id, ex_id, word.id_))
+                        if cursor.rowcount != 1:
+                            cursor = await conn.execute(
+                                f"SELECT id FROM {l.name}_EX WHERE text = ?", 
+                                (example,))
+                            row = await cursor.fetchone()
+                            ex_id = row[0]
 
-            await conn.execute(
-                f"INSERT INTO dict (user, date, {word.language.lower()}) VALUES (?, ?, ?, ?)",
-                (user_id, args_.date, word.id_))
+                        await conn.execute(
+                            f"INSERT INTO examples (user, ex, {l.name.lower()}) VALUES (?, ?, ?)",
+                            (user_id, ex_id, word.id_))
+                        
+            # cursor = await conn.execute(
+            #         f"INSERT OR IGNORE INTO links (user, {','.join(column_languages)})\
+            #             VALUES (?, {','.join(['?' for _ in column_languages])})",
+            #         (user_id, *column_words_ids)
+            #     )
+            column_list = ', '.join(column_languages)
+            placeholders = ', '.join(['?' for _ in column_languages])
 
-            await conn.execute(
-                f"INSERT INTO progress (user, lvl, {word.language.lower()}) VALUES (?, ?, ?)",
-                (user_id, 0, word.id_))
+            query = f"""
+                INSERT INTO links (user, {column_list})
+                SELECT ?, {placeholders}
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM links
+                    WHERE user = ?
+                    AND {" AND ".join([f"{col} = ?" for col in column_languages])}
+                )
+            """
+            params = (user_id, *column_words_ids, user_id, *column_words_ids)
+            await conn.execute(query, params)
             
         await conn.commit()  
         return True
@@ -165,7 +182,7 @@ async def add_to_db(tg_id: int, args_: WordRow, conn) -> bool:
         return False
 
 
-async def del_from_db(tg_id, args_: DelArgs, conn) -> bool:
+async def del_from_db(tg_id: int, args_: DelArgs, conn) -> bool:
     try:
         user_id = get_user_id(tg_id, conn)
 
@@ -208,17 +225,15 @@ async def del_from_db(tg_id, args_: DelArgs, conn) -> bool:
         return False
 
 
-async def check_user(tg_id:str, username, conn) -> bool:
-    async with conn.conn() as conn:
-        await conn.execute("SELECT 1 FROM user WHERE tg_id = ?", (tg_id,))
-        exists = await conn.fetchone() is not None
+async def check_user(tg_id: int, username, conn) -> bool:
+    cursor = await conn.execute("SELECT 1 FROM users WHERE tg_id = ?", (tg_id,))
+    exist = (await cursor.fetchone()) is not None
 
-        if not exists:
-            await conn.execute("INSERT INTO user (tg_id, username) VALUES (?, ?)", (tg_id, username))
-            await conn.commit()
-            return False
-        else:
-            return True
+    if not exist:
+        await conn.execute("INSERT INTO users (tg_id, name) VALUES (?, ?)", (tg_id, username))
+        await conn.commit()
+        return False
+    return True
 
 
 async def get_word(tg_id: int, conn, n: int = 1) -> list[WordRow,]:
@@ -316,7 +331,7 @@ async def get_all(tg_id: int, conn) -> dict[int:list[WordRow]]:
 
 async def get_info(tg_id: int, conn) -> tuple:
     """
-    ruturn info about amount of days and args_ of user: (args_, days)
+    ruturn info about amount of days and words of user: (words, days)
     """
 
     async with conn.conn() as conn:
@@ -329,45 +344,11 @@ async def get_info(tg_id: int, conn) -> tuple:
             return await conn.fetchall()
 
 
-async def search(tg_id: int, word: str, conn):
-    """
-    ruturn info about amount of days and args_ of user: (args_, days)
-    """
-
-    async with conn.conn() as conn:
-        async with conn.execute(
-            f'''
-                SELECT * 
-                FROM {tg_id}
-                WHERE eng = '{word}'
-            '''
-            ) as conn:
-
-            row = await conn.fetchall()
-            
-            if row:
-                return WordRow(*row[0])
-
-
 # #import pudb; pudb.set_trace()
-
-async def main():
-    from datetime import date
-    import aiosqlite
-
-    conn = await aiosqlite.connect("/home/zoy/git/asistent-tgbot-/new_db2.db")
-    args_ = [WordRow(**{
-             "language": ('EN', 'RU'), 
-             "word": Word(**{"text": 'test', "tg_id": 123}), 
-             "trans": (Word(**{"text": 'тест', "tg_id": 123}),),
-             "date": date.today().strftime('%Y-%m-%d'),
-             "example": (('Test there.',),)}
-    )]
-    await add_to_db(123, args_, conn)
 
 
 async def get_user_id(tg_id, conn):
-    async with conn.execute("SELECT id FROM user WHERE tg_id = ?", (tg_id,)) as cursor:
+    async with conn.execute("SELECT id FROM users WHERE tg_id = ?", (tg_id,)) as cursor:
         row = await cursor.fetchone()
         if not row:
             print("User not found")
@@ -375,8 +356,3 @@ async def get_user_id(tg_id, conn):
         user_id = row[0]
     
     return user_id
-    
-
-if __name__ == "__main__":
-     import asyncio
-     asyncio.run(main())
